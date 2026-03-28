@@ -13,7 +13,7 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { IconLayoutRows, IconWaveSine, IconCommand, IconTerminal2, IconRobot, IconBook, IconSettings, IconFrame, IconChartPie, IconMap } from "@tabler/icons-react"
+import { IconLayoutRows, IconWaveSine, IconCommand, IconTerminal2, IconRobot, IconBook, IconSettings, IconFrame, IconChartPie, IconMap, IconBuildingWarehouse, IconCash } from "@tabler/icons-react"
 
 // This is sample data.
 const data = {
@@ -24,50 +24,36 @@ const data = {
   },
   teams: [
     {
-      name: "Acme Inc",
+      name: "Wake Solutions",
       logo: (
-        <IconLayoutRows
-        />
+        <IconWaveSine/>
       ),
-      plan: "Enterprise",
-    },
-    {
-      name: "Acme Corp.",
-      logo: (
-        <IconWaveSine
-        />
-      ),
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: (
-        <IconCommand
-        />
-      ),
-      plan: "Free",
+      plan: "Pro",
     },
   ],
   navMain: [
     {
-      title: "Playground",
+      title: "Ventas",
       url: "#",
+      initialOpen: true,
       icon: (
-        <IconTerminal2
-        />
+        <IconCash/>
       ),
       isActive: true,
       items: [
         {
-          title: "History",
+          title: "Nueva Venta",
+          url: "#",
+          icon: (
+            <IconCash/>
+          ),
+        },
+        {
+          title: "Productos",
           url: "#",
         },
         {
-          title: "Starred",
-          url: "#",
-        },
-        {
-          title: "Settings",
+          title: "Historial",
           url: "#",
         },
       ],
