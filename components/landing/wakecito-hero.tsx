@@ -43,20 +43,6 @@ function RotatingHighlight() {
   );
 }
 
-const GALLERY = [
-  { label: "POS y caja", from: "from-landing-teal/40", to: "to-landing-sky" },
-  {
-    label: "Facturación SAR",
-    from: "from-landing-coral/35",
-    to: "to-landing-sky/80",
-  },
-  {
-    label: "Inventarios",
-    from: "from-landing-teal/25",
-    to: "to-white",
-  },
-] as const;
-
 /**
  * Landing estilo referencia (hero 2 col + bloque info + galería), contenido Wakecito.
  * Una pantalla (dvh), sin scroll.
@@ -101,7 +87,7 @@ export function WakecitoHero() {
                 size="lg"
                 className="h-9 rounded-md border-0 bg-landing-coral px-5 text-[clamp(0.65rem,1.5vw,0.85rem)] font-semibold text-white shadow-md hover:bg-landing-coral/90 sm:h-10 sm:px-7"
               >
-                <Link href="/dashboard">Comenzar ahora</Link>
+                <Link href="/login">Comenzar ahora</Link>
               </Button>
             </div>
           </div>

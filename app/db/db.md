@@ -2,7 +2,8 @@
 
 ## 1. Configuración de Conexión
 - **ORM:** Drizzle ORM vinculado a Supabase (PostgreSQL).
-- **Client:** El cliente de base de datos se exporta desde `@/db/index.ts` (o la ruta que defina el proyecto).
+- **Variables:** `DATABASE_URL` en `.env.local` (ver `.env.example` en la raíz).
+- **Client:** `getDb()` en `@/db/index.ts` (postgres.js + esquema en `app/db/schema.ts`). Usar solo en servidor (API routes, server actions).
 
 ## 2. Diccionario de Datos (Tablas en Inglés)
 Todas las tablas deben seguir este esquema estricto para evitar errores de llaves foráneas.
