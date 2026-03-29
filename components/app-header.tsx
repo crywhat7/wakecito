@@ -58,7 +58,7 @@ export function AppHeader({
       )}
       {...props}
     >
-      <div className="flex min-w-0 flex-1 items-center justify-start gap-3">
+      <a className="flex min-w-0 flex-1 items-center justify-start gap-3" href="/dashboard">
         <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-muted/60 shadow-sm">
           <img
             src={logoSrc}
@@ -72,7 +72,7 @@ export function AppHeader({
         <span className="truncate text-base font-semibold tracking-tight">
           {company.name}
         </span>
-      </div>
+      </a>
 
       <nav
         className="hidden flex-none items-center justify-center gap-2 sm:flex"
