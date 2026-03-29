@@ -2,18 +2,12 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { IconLayoutCards, IconTable } from "@tabler/icons-react"
+import { IconLayoutCards, IconTable, IconX } from "@tabler/icons-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 import { isCrudTableKey, type CrudTableKey } from "@/lib/crud/registry"
 
@@ -123,8 +117,8 @@ export function CrudExplorerClient({
   const [byColumn, setByColumn] = React.useState<Record<string, string>>({})
   const [byUi, setByUi] = React.useState<Record<string, string>>({})
 
-  const [sheetOpen, setSheetOpen] = React.useState(false)
-  const [sheetMode, setSheetMode] = React.useState<"create" | "edit">("create")
+  const [formPanelOpen, setFormPanelOpen] = React.useState(false)
+  const [formMode, setFormMode] = React.useState<"create" | "edit">("create")
   const [editingId, setEditingId] = React.useState<string | null>(null)
   const [formValues, setFormValues] = React.useState<Record<string, string>>({})
   const [fkCache, setFkCache] = React.useState<
@@ -260,7 +254,7 @@ export function CrudExplorerClient({
 
   function openCreate() {
     if (!meta) return
-    setSheetMode("create")
+    setFormMode("create")
     setEditingId(null)
     setFormErr(null)
     const next: Record<string, string> = {}
@@ -272,7 +266,7 @@ export function CrudExplorerClient({
       next[n] = ""
     }
     setFormValues(next)
-    setSheetOpen(true)
+    setFormPanelOpen(true)
     for (const c of meta.columns) {
       if (c.foreign_table_name) {
         void loadFk(c.column_name)
@@ -282,7 +276,7 @@ export function CrudExplorerClient({
 
   function openEdit(row: Record<string, unknown>) {
     if (!meta) return
-    setSheetMode("edit")
+    setFormMode("edit")
     const id = String(row[pk] ?? "")
     setEditingId(id)
     setFormErr(null)
@@ -307,7 +301,7 @@ export function CrudExplorerClient({
       }
     }
     setFormValues(next)
-    setSheetOpen(true)
+    setFormPanelOpen(true)
     for (const c of meta.columns) {
       if (c.foreign_table_name) {
         void loadFk(c.column_name)
@@ -324,12 +318,12 @@ export function CrudExplorerClient({
       for (const [k, v] of Object.entries(formValues)) {
         const col = meta.columns.find((c) => c.column_name === k)
         if (!col) continue
-        if (sheetMode === "create") {
+        if (formMode === "create") {
           if (meta.policy.readOnlyColumns.includes(k)) continue
           if (meta.policy.excludeColumns.includes(k)) continue
           if (hideCompanyIdField(table, k)) continue
         }
-        if (sheetMode === "edit") {
+        if (formMode === "edit") {
           if (meta.policy.readOnlyColumns.includes(k)) continue
           if (k === pk) continue
         }
@@ -349,7 +343,7 @@ export function CrudExplorerClient({
         }
       }
 
-      if (sheetMode === "create") {
+      if (formMode === "create") {
         const res = await fetch(`/api/crud/${table}`, {
           method: "POST",
           credentials: "include",
@@ -378,7 +372,7 @@ export function CrudExplorerClient({
           return
         }
       }
-      setSheetOpen(false)
+      setFormPanelOpen(false)
       router.refresh()
       await refetch()
     } finally {
@@ -489,6 +483,13 @@ export function CrudExplorerClient({
         </Button>
       </div>
 
+      <div
+        className={cn(
+          "flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6",
+          formPanelOpen && "lg:items-stretch",
+        )}
+      >
+        <div className="min-w-0 flex-1 space-y-4">
       {metaErr ? (
         <p className="text-sm text-destructive">{metaErr}</p>
       ) : null}
@@ -645,131 +646,153 @@ export function CrudExplorerClient({
           Siguiente
         </Button>
       </div>
+        </div>
 
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
-          <SheetHeader>
-            <SheetTitle>
-              {sheetMode === "create"
+        {formPanelOpen ? (
+          <aside
+            className={cn(
+              "w-full shrink-0 rounded-lg border border-border bg-card text-card-foreground shadow-sm ring-1 ring-foreground/10",
+              "lg:sticky lg:top-4 lg:max-h-[min(100vh-6rem,56rem)] lg:w-[min(100%,26rem)] lg:overflow-y-auto",
+            )}
+            aria-label={
+              formMode === "create"
                 ? ui("crud.new_record", "Nuevo registro")
-                : ui("crud.edit_record", "Editar registro")}
-            </SheetTitle>
-          </SheetHeader>
-          <div className="mt-4 grid gap-4 px-4 pb-8">
-            {meta?.columns.map((col) => {
-              const n = col.column_name
-              if (meta.policy.excludeColumns.includes(n)) return null
-              if (sheetMode === "create") {
-                if (meta.policy.readOnlyColumns.includes(n)) return null
-                if (hideCompanyIdField(table, n)) return null
-              }
-              if (sheetMode === "edit" && n === pk) {
-                return (
-                  <div key={n} className="grid gap-1.5">
-                    <Label>
-                      {colLabel(n)} ({ui("crud.readonly", "solo lectura")})
-                    </Label>
-                    <Input value={formValues[n] ?? ""} readOnly disabled />
-                  </div>
-                )
-              }
-              if (
-                sheetMode === "edit" &&
-                meta.policy.readOnlyColumns.includes(n)
-              ) {
-                return (
-                  <div key={n} className="grid gap-1.5">
-                    <Label>
-                      {colLabel(n)} ({ui("crud.readonly", "solo lectura")})
-                    </Label>
-                    <Input value={formValues[n] ?? ""} readOnly disabled />
-                  </div>
-                )
-              }
+                : ui("crud.edit_record", "Editar registro")
+            }
+          >
+            <div className="sticky top-0 z-1 flex items-start justify-between gap-2 border-b border-border bg-card px-4 py-3">
+              <h2 className="font-heading text-sm font-medium leading-tight">
+                {formMode === "create"
+                  ? ui("crud.new_record", "Nuevo registro")
+                  : ui("crud.edit_record", "Editar registro")}
+              </h2>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="shrink-0"
+                onClick={() => setFormPanelOpen(false)}
+                aria-label="Cerrar formulario"
+              >
+                <IconX className="size-4" stroke={1.5} />
+              </Button>
+            </div>
+            <div className="grid gap-4 p-4 pb-6">
+              {meta?.columns.map((col) => {
+                const n = col.column_name
+                if (meta.policy.excludeColumns.includes(n)) return null
+                if (formMode === "create") {
+                  if (meta.policy.readOnlyColumns.includes(n)) return null
+                  if (hideCompanyIdField(table, n)) return null
+                }
+                if (formMode === "edit" && n === pk) {
+                  return (
+                    <div key={n} className="grid gap-1.5">
+                      <Label>
+                        {colLabel(n)} ({ui("crud.readonly", "solo lectura")})
+                      </Label>
+                      <Input value={formValues[n] ?? ""} readOnly disabled />
+                    </div>
+                  )
+                }
+                if (
+                  formMode === "edit" &&
+                  meta.policy.readOnlyColumns.includes(n)
+                ) {
+                  return (
+                    <div key={n} className="grid gap-1.5">
+                      <Label>
+                        {colLabel(n)} ({ui("crud.readonly", "solo lectura")})
+                      </Label>
+                      <Input value={formValues[n] ?? ""} readOnly disabled />
+                    </div>
+                  )
+                }
 
-              if (col.foreign_table_name) {
-                const opts = fkCache[n] ?? []
+                if (col.foreign_table_name) {
+                  const opts = fkCache[n] ?? []
+                  return (
+                    <div key={n} className="grid gap-1.5">
+                      <Label htmlFor={`f-${n}`}>
+                        {colLabel(n)}
+                        <span className="ml-1 font-normal text-muted-foreground">
+                          → {col.foreign_table_name}
+                        </span>
+                      </Label>
+                      <select
+                        id={`f-${n}`}
+                        className={cn(
+                          "h-7 w-full rounded-md border border-input bg-input/20 px-2 text-sm",
+                        )}
+                        value={formValues[n] ?? ""}
+                        onChange={(e) =>
+                          setFormValues((v) => ({ ...v, [n]: e.target.value }))
+                        }
+                      >
+                        <option value="">—</option>
+                        {opts.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )
+                }
+
+                const it = inputTypeForPg(col.data_type)
+                if (it === "checkbox") {
+                  return (
+                    <div key={n} className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id={`f-${n}`}
+                        checked={formValues[n] === "true"}
+                        onChange={(e) =>
+                          setFormValues((v) => ({
+                            ...v,
+                            [n]: e.target.checked ? "true" : "false",
+                          }))
+                        }
+                      />
+                      <Label htmlFor={`f-${n}`}>{colLabel(n)}</Label>
+                    </div>
+                  )
+                }
+
                 return (
                   <div key={n} className="grid gap-1.5">
-                    <Label htmlFor={`f-${n}`}>
-                      {colLabel(n)}
-                      <span className="ml-1 font-normal text-muted-foreground">
-                        → {col.foreign_table_name}
-                      </span>
-                    </Label>
-                    <select
+                    <Label htmlFor={`f-${n}`}>{colLabel(n)}</Label>
+                    <Input
                       id={`f-${n}`}
-                      className={cn(
-                        "h-7 w-full rounded-md border border-input bg-input/20 px-2 text-sm",
-                      )}
+                      type={it === "number" ? "number" : it}
                       value={formValues[n] ?? ""}
                       onChange={(e) =>
                         setFormValues((v) => ({ ...v, [n]: e.target.value }))
                       }
-                    >
-                      <option value="">—</option>
-                      {opts.map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )
-              }
-
-              const it = inputTypeForPg(col.data_type)
-              if (it === "checkbox") {
-                return (
-                  <div key={n} className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id={`f-${n}`}
-                      checked={formValues[n] === "true"}
-                      onChange={(e) =>
-                        setFormValues((v) => ({
-                          ...v,
-                          [n]: e.target.checked ? "true" : "false",
-                        }))
-                      }
                     />
-                    <Label htmlFor={`f-${n}`}>{colLabel(n)}</Label>
                   </div>
                 )
-              }
-
-              return (
-                <div key={n} className="grid gap-1.5">
-                  <Label htmlFor={`f-${n}`}>{colLabel(n)}</Label>
-                  <Input
-                    id={`f-${n}`}
-                    type={it === "number" ? "number" : it}
-                    value={formValues[n] ?? ""}
-                    onChange={(e) =>
-                      setFormValues((v) => ({ ...v, [n]: e.target.value }))
-                    }
-                  />
-                </div>
-              )
-            })}
-            {formErr ? (
-              <p className="text-xs text-destructive">{formErr}</p>
-            ) : null}
-            <div className="flex gap-2 pt-2">
-              <Button type="button" onClick={submitForm} disabled={saving}>
-                {saving ? "Guardando…" : ui("crud.save", "Guardar")}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setSheetOpen(false)}
-              >
-                {ui("crud.cancel", "Cancelar")}
-              </Button>
+              })}
+              {formErr ? (
+                <p className="text-xs text-destructive">{formErr}</p>
+              ) : null}
+              <div className="flex flex-wrap gap-2 border-t border-border/80 pt-4">
+                <Button type="button" onClick={submitForm} disabled={saving}>
+                  {saving ? "Guardando…" : ui("crud.save", "Guardar")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setFormPanelOpen(false)}
+                >
+                  {ui("crud.cancel", "Cancelar")}
+                </Button>
+              </div>
             </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+          </aside>
+        ) : null}
+      </div>
     </div>
   )
 }

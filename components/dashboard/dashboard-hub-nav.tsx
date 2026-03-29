@@ -50,12 +50,12 @@ const modules: HubModule[] = [
     iconSrc: "/dashboard-icons/clientes.svg",
     href: "/dashboard/configuracion",
   },
-  {
-    id: "crud",
-    label: "Explorador CRUD",
-    iconSrc: "/dashboard-icons/clientes.svg",
-    href: "/dashboard/crud",
-  },
+  // {
+  //   id: "crud",
+  //   label: "Explorador CRUD",
+  //   iconSrc: "/dashboard-icons/clientes.svg",
+  //   href: "/dashboard/crud",
+  // },
 ]
 
 const actions = [
