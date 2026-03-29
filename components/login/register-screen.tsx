@@ -1,9 +1,9 @@
 "use client";
 
-import { IconCheck, IconMail } from "@tabler/icons-react";
+import { IconCheck, IconBuildingStore } from "@tabler/icons-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -13,18 +13,18 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 const BENEFITS = [
-  "Facturación pensada para Honduras (SAR).",
-  "Inventario y ventas en un solo lugar.",
-  "Acceso desde el navegador, sin instalar apps.",
+  "Tu empresa nueva con plan gratuito.",
+  "Un solo usuario administrador para empezar.",
+  "Datos aislados por empresa (multi-tenant).",
 ];
 
-export function LoginScreen() {
+export function RegisterScreen() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const nextUrl = searchParams.get("next") || "/dashboard";
-
+  const [name, setName] = useState("");
+  const [companyName, setCompanyName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [terms, setTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,13 +36,22 @@ export function LoginScreen() {
       setError("Tenés que aceptar los términos y la privacidad.");
       return;
     }
+    if (password !== confirm) {
+      setError("Las contraseñas no coinciden.");
+      return;
+    }
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          name,
+          companyName,
+          email,
+          password,
+        }),
       });
       const json = (await res.json()) as
         | { success: true; data: unknown }
@@ -52,7 +61,7 @@ export function LoginScreen() {
         setError(json.error);
         return;
       }
-      router.push(nextUrl);
+      router.push("/dashboard");
       router.refresh();
     } catch {
       setError("No se pudo conectar. Probá de nuevo.");
@@ -72,11 +81,7 @@ export function LoginScreen() {
       >
         <div
           aria-hidden
-          className="pointer-events-none absolute -right-8 top-16 size-32 rounded-full border-2 border-amber-200/60"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute bottom-24 -right-4 size-20 rounded-full border border-amber-300/40"
+          className="pointer-events-none absolute -right-8 top-20 size-28 rounded-full border-2 border-amber-200/50"
         />
 
         <div className="relative z-10">
@@ -101,7 +106,7 @@ export function LoginScreen() {
           </div>
 
           <h2 className="font-heading mt-10 text-sm font-semibold text-wakecito-charcoal/80">
-            Al usar Wakecito podés:
+            Al registrarte obtenés:
           </h2>
           <ul className="mt-4 space-y-3">
             {BENEFITS.map((line) => (
@@ -119,7 +124,7 @@ export function LoginScreen() {
         </div>
 
         <p className="relative z-10 text-xs text-wakecito-charcoal/50">
-          Hecho para pymes en Honduras.
+          Un negocio, un espacio de trabajo.
         </p>
       </aside>
 
@@ -137,23 +142,19 @@ export function LoginScreen() {
           <span className="font-heading text-lg font-bold text-wakecito-charcoal">
             Wakecito
           </span>
-          <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[0.65rem] font-medium text-neutral-500">
-            Beta
-          </span>
         </div>
 
         <div className="flex flex-1 items-center justify-center px-4 pb-8 pt-2 md:px-8 md:py-10">
           <div className="w-full max-w-md rounded-3xl border border-black/6 bg-white p-6 shadow-xl sm:p-8">
             <div className="flex flex-col items-center gap-1">
               <div className="flex size-11 items-center justify-center rounded-2xl bg-wakecito-mint text-wakecito-charcoal">
-                <IconMail className="size-5" stroke={1.5} />
+                <IconBuildingStore className="size-5" stroke={1.5} />
               </div>
-
               <h1 className="font-heading mt-3 text-center text-2xl font-bold tracking-tight text-wakecito-charcoal sm:text-[1.65rem]">
-                Iniciá sesión
+                Creá tu cuenta
               </h1>
               <p className="mt-1 max-w-72 text-center text-xs text-neutral-500 sm:text-sm">
-                Ingresá tu correo y contraseña.
+                Tu usuario, tu negocio y plan gratuito en un solo paso.
               </p>
             </div>
 
@@ -166,50 +167,89 @@ export function LoginScreen() {
               </p>
             ) : null}
 
-            <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+            <form className="mt-6 space-y-3.5" onSubmit={handleSubmit}>
               <div className="space-y-2">
-                <Label htmlFor="login-email" className="text-wakecito-charcoal">
-                  Correo electrónico
-                </Label>
+                <Label htmlFor="reg-name">Tu nombre</Label>
                 <Input
-                  id="login-email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="vos@tuempresa.com"
+                  id="reg-name"
+                  name="name"
+                  autoComplete="name"
                   required
-                  value={email}
-                  onChange={(ev) => setEmail(ev.target.value)}
-                  className="h-11 rounded-xl border-neutral-200 bg-neutral-50/80 px-3.5 text-sm placeholder:text-neutral-400 focus-visible:bg-white md:h-12 md:text-base"
+                  minLength={2}
+                  value={name}
+                  onChange={(ev) => setName(ev.target.value)}
+                  className="h-11 rounded-xl border-neutral-200 bg-neutral-50/80 px-3.5 text-sm md:h-11"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="login-password" className="text-wakecito-charcoal">
-                  Contraseña
-                </Label>
+                <Label htmlFor="reg-company">Nombre del negocio</Label>
                 <Input
-                  id="login-password"
+                  id="reg-company"
+                  name="companyName"
+                  autoComplete="organization"
+                  required
+                  minLength={2}
+                  value={companyName}
+                  onChange={(ev) => setCompanyName(ev.target.value)}
+                  placeholder="Mi tienda / Mi empresa"
+                  className="h-11 rounded-xl border-neutral-200 bg-neutral-50/80 px-3.5 text-sm md:h-11"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="reg-email">Correo electrónico</Label>
+                <Input
+                  id="reg-email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(ev) => setEmail(ev.target.value)}
+                  className="h-11 rounded-xl border-neutral-200 bg-neutral-50/80 px-3.5 text-sm md:h-11"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="reg-password">Contraseña</Label>
+                <Input
+                  id="reg-password"
                   name="password"
                   type="password"
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                   required
                   minLength={8}
                   value={password}
                   onChange={(ev) => setPassword(ev.target.value)}
-                  className="h-11 rounded-xl border-neutral-200 bg-neutral-50/80 px-3.5 text-sm placeholder:text-neutral-400 focus-visible:bg-white md:h-12 md:text-base"
+                  className="h-11 rounded-xl border-neutral-200 bg-neutral-50/80 px-3.5 text-sm md:h-11"
                 />
               </div>
 
-              <div className="flex items-start gap-2.5">
+              <div className="space-y-2">
+                <Label htmlFor="reg-confirm">Confirmar contraseña</Label>
+                <Input
+                  id="reg-confirm"
+                  name="confirm"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  minLength={8}
+                  value={confirm}
+                  onChange={(ev) => setConfirm(ev.target.value)}
+                  className="h-11 rounded-xl border-neutral-200 bg-neutral-50/80 px-3.5 text-sm md:h-11"
+                />
+              </div>
+
+              <div className="flex items-start gap-2.5 pt-1">
                 <Checkbox
-                  id="login-terms"
+                  id="reg-terms"
                   checked={terms}
                   onCheckedChange={(v) => setTerms(v === true)}
                   className="mt-0.5"
                 />
                 <label
-                  htmlFor="login-terms"
+                  htmlFor="reg-terms"
                   className="cursor-pointer text-[0.65rem] leading-relaxed text-neutral-500 sm:text-xs"
                 >
                   Acepto los{" "}
@@ -233,19 +273,19 @@ export function LoginScreen() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="h-11 w-full rounded-xl bg-wakecito-charcoal text-sm font-semibold text-white shadow-md hover:bg-wakecito-charcoal/90 md:h-12 md:text-base"
+                className="mt-2 h-11 w-full rounded-xl bg-wakecito-charcoal text-sm font-semibold text-white shadow-md hover:bg-wakecito-charcoal/90 md:h-12"
               >
-                {loading ? "Entrando…" : "Continuar"}
+                {loading ? "Creando cuenta…" : "Registrarme"}
               </Button>
             </form>
 
             <p className="mt-6 text-center text-xs text-neutral-500">
-              ¿No tenés cuenta?{" "}
+              ¿Ya tenés cuenta?{" "}
               <Link
-                href="/registro"
+                href="/login"
                 className="font-semibold text-wakecito-serious underline-offset-2 hover:underline"
               >
-                Creá una cuenta
+                Iniciá sesión
               </Link>
             </p>
           </div>

@@ -85,7 +85,7 @@ export function WakecitoHero() {
               <Button
                 asChild
                 size="lg"
-                className="h-9 rounded-md border-0 bg-landing-coral px-5 text-[clamp(0.65rem,1.5vw,0.85rem)] font-semibold text-white shadow-md hover:bg-landing-coral/90 sm:h-10 sm:px-7"
+                className="h-9 rounded-md border-0 bg-wakecito-mint px-5 text-[clamp(0.65rem,1.5vw,0.85rem)] font-semibold text-wakecito-charcoal shadow-md hover:bg-wakecito-mint/80 sm:h-10 sm:px-7"
               >
                 <Link href="/login">Comenzar ahora</Link>
               </Button>

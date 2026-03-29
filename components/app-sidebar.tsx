@@ -161,7 +161,16 @@ const data = {
   ],
 }
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({
+  user,
+  ...props
+}: React.ComponentProps<typeof Sidebar> & {
+  user: { name: string; email: string; avatar?: string };
+}) {
+  const userWithAvatar = {
+    ...user,
+    avatar: user.avatar ?? "",
+  };
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -172,7 +181,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={userWithAvatar} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
