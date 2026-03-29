@@ -92,7 +92,7 @@ export function NavUser({
               <DropdownMenuItem>
                 <IconSparkles
                 />
-                Upgrade to Pro
+                Actualizar plan
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
@@ -100,17 +100,7 @@ export function NavUser({
               <DropdownMenuItem>
                 <IconRosetteDiscountCheck
                 />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconCreditCard
-                />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconBell
-                />
-                Notifications
+                Cuenta
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

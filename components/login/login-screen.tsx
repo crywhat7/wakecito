@@ -25,17 +25,12 @@ export function LoginScreen() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [terms, setTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!terms) {
-      setError("Tenés que aceptar los términos y la privacidad.");
-      return;
-    }
     setLoading(true);
     try {
       const res = await fetch("/api/auth/login", {
@@ -199,35 +194,6 @@ export function LoginScreen() {
                   onChange={(ev) => setPassword(ev.target.value)}
                   className="h-11 rounded-xl border-neutral-200 bg-neutral-50/80 px-3.5 text-sm placeholder:text-neutral-400 focus-visible:bg-white md:h-12 md:text-base"
                 />
-              </div>
-
-              <div className="flex items-start gap-2.5">
-                <Checkbox
-                  id="login-terms"
-                  checked={terms}
-                  onCheckedChange={(v) => setTerms(v === true)}
-                  className="mt-0.5"
-                />
-                <label
-                  htmlFor="login-terms"
-                  className="cursor-pointer text-[0.65rem] leading-relaxed text-neutral-500 sm:text-xs"
-                >
-                  Acepto los{" "}
-                  <Link
-                    href="/terminos"
-                    className="font-medium text-wakecito-serious underline-offset-2 hover:underline"
-                  >
-                    términos
-                  </Link>{" "}
-                  y la{" "}
-                  <Link
-                    href="/privacidad"
-                    className="font-medium text-wakecito-serious underline-offset-2 hover:underline"
-                  >
-                    privacidad
-                  </Link>
-                  .
-                </label>
               </div>
 
               <Button
