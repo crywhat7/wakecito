@@ -31,11 +31,13 @@ const modules: HubModule[] = [
     id: "clientes",
     label: "Clientes",
     iconSrc: "/dashboard-icons/clientes.svg",
+    href: "/dashboard/clientes",
   },
   {
     id: "compras",
     label: "Compras",
     iconSrc: "/dashboard-icons/compras.svg",
+    href: "/dashboard/compras",
   },
   {
     id: "inventarios",
@@ -47,6 +49,12 @@ const modules: HubModule[] = [
     label: "Configuración",
     iconSrc: "/dashboard-icons/clientes.svg",
     href: "/dashboard/configuracion",
+  },
+  {
+    id: "crud",
+    label: "Explorador CRUD",
+    iconSrc: "/dashboard-icons/clientes.svg",
+    href: "/dashboard/crud",
   },
 ]
 

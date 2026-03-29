@@ -4,19 +4,17 @@ import postgres from "postgres";
 import * as schema from "@/app/db/schema";
 
 type Db = ReturnType<typeof drizzle<typeof schema>>;
+type Pg = ReturnType<typeof postgres>;
 
-declare global {
-  var __wakecito_db: Db | undefined;
-  var __wakecito_pg: ReturnType<typeof postgres> | undefined;
-}
+let singletonPg: Pg | undefined;
+let singletonDb: Db | undefined;
 
 /**
- * Cliente Drizzle + postgres.js.
- * Llamalo solo en runtime (handlers, server actions); así el build no exige DATABASE_URL.
+ * Cliente postgres.js (consultas parametrizadas / identificadores dinámicos con whitelist).
  */
-export function getDb(): Db {
-  if (globalThis.__wakecito_db) {
-    return globalThis.__wakecito_db;
+export function getPg(): Pg {
+  if (singletonPg) {
+    return singletonPg;
   }
 
   const url = process.env.DATABASE_URL;
@@ -26,18 +24,23 @@ export function getDb(): Db {
     );
   }
 
-  const client =
-    globalThis.__wakecito_pg ??
-    postgres(url, {
-      max: 1,
-      idle_timeout: 20,
-      connect_timeout: 10,
-    });
+  singletonPg = postgres(url, {
+    max: 1,
+    idle_timeout: 20,
+    connect_timeout: 10,
+  });
+  singletonDb = drizzle(singletonPg, { schema });
+  return singletonPg;
+}
 
-  if (process.env.NODE_ENV !== "production") {
-    globalThis.__wakecito_pg = client;
+/**
+ * Cliente Drizzle + postgres.js.
+ * Llamalo solo en runtime (handlers); así el build no exige DATABASE_URL.
+ */
+export function getDb(): Db {
+  if (singletonDb) {
+    return singletonDb;
   }
-
-  globalThis.__wakecito_db = drizzle(client, { schema });
-  return globalThis.__wakecito_db;
+  getPg();
+  return singletonDb!;
 }

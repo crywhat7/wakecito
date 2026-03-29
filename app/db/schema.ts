@@ -113,6 +113,74 @@ export const memberships = pgTable(
   ],
 );
 
+/** Traducciones UI / nombres de columnas (locale + namespace + key únicos). */
+export const translations = pgTable(
+  "translations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    locale: text("locale").notNull().default("es"),
+    namespace: text("namespace").notNull(),
+    key: text("key").notNull(),
+    value: text("value").notNull(),
+    created_at: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updated_at: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    unique("translations_locale_namespace_key_unique").on(
+      t.locale,
+      t.namespace,
+      t.key,
+    ),
+  ],
+);
+
+/** Clientes del negocio por empresa (multi-tenant). */
+export const clients = pgTable("clients", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  company_id: uuid("company_id")
+    .notNull()
+    .references(() => companies.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  rtn: text("rtn"),
+  email: text("email"),
+  phone: text("phone"),
+  address: text("address"),
+  notes: text("notes"),
+  is_active: boolean("is_active").notNull().default(true),
+  created_at: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updated_at: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/** Compras registradas por empresa. */
+export const purchases = pgTable("purchases", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  company_id: uuid("company_id")
+    .notNull()
+    .references(() => companies.id, { onDelete: "cascade" }),
+  reference: text("reference"),
+  supplier_name: text("supplier_name"),
+  purchase_date: date("purchase_date"),
+  total_amount: numeric("total_amount", { precision: 14, scale: 2 })
+    .notNull()
+    .default("0"),
+  currency: text("currency").notNull().default("HNL"),
+  notes: text("notes"),
+  created_at: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updated_at: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export type User = InferSelectModel<typeof users>;
 export type NewUser = InferInsertModel<typeof users>;
 
@@ -130,3 +198,12 @@ export type NewCompany = InferInsertModel<typeof companies>;
 
 export type Membership = InferSelectModel<typeof memberships>;
 export type NewMembership = InferInsertModel<typeof memberships>;
+
+export type Translation = InferSelectModel<typeof translations>;
+export type NewTranslation = InferInsertModel<typeof translations>;
+
+export type Client = InferSelectModel<typeof clients>;
+export type NewClient = InferInsertModel<typeof clients>;
+
+export type Purchase = InferSelectModel<typeof purchases>;
+export type NewPurchase = InferInsertModel<typeof purchases>;

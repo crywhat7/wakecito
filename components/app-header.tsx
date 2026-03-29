@@ -1,13 +1,18 @@
 "use client"
 
 import * as React from "react"
-import { IconCash, IconPackage, IconReceipt } from "@tabler/icons-react"
+import { IconBuildingStore, IconCash, IconPackage, IconReceipt } from "@tabler/icons-react"
 
 import { NavUser } from "@/components/nav-user"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 const quickActions = [
+  {
+    label: "Abrir POS",
+    icon: IconBuildingStore,
+    href: "#",
+  },
   {
     label: "Nueva Venta",
     icon: IconCash,

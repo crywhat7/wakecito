@@ -75,6 +75,38 @@ Usuarios por empresa: vínculo usuario ↔ empresa y rol.
 - `updated_at`: timestamptz (not null, default now).
 - Unique: (`user_id`, `company_id`).
 
+### Tabla: `translations`
+Textos de interfaz y etiquetas de columnas por idioma (similar a “DocType labels” en otros ERP).
+
+- `id`: uuid (Primary Key).
+- `locale`: text (not null, default `'es'`).
+- `namespace`: text (not null) — ej. `'column'` (clave `tabla.columna`), `'table'` (clave nombre de tabla), `'ui'`.
+- `key`: text (not null) — ej. `plans.name`, `clients`, `crud.save`.
+- `value`: text (not null) — texto mostrado.
+- `created_at`, `updated_at`: timestamptz (not null, default now).
+- Unique: (`locale`, `namespace`, `key`).
+
+### Tabla: `clients`
+Clientes del negocio por empresa.
+
+- `id`: uuid (Primary Key).
+- `company_id`: uuid (FK → `companies.id`, not null, on delete cascade).
+- `name`: text (not null).
+- `rtn`, `email`, `phone`, `address`, `notes`: text (opcionales).
+- `is_active`: boolean (not null, default true).
+- `created_at`, `updated_at`: timestamptz (not null, default now).
+
+### Tabla: `purchases`
+Compras registradas por empresa.
+
+- `id`: uuid (Primary Key).
+- `company_id`: uuid (FK → `companies.id`, not null, on delete cascade).
+- `reference`, `supplier_name`, `notes`: text (opcionales).
+- `purchase_date`: date.
+- `total_amount`: numeric(14, 2) (not null, default 0).
+- `currency`: text (not null, default `'HNL'`).
+- `created_at`, `updated_at`: timestamptz (not null, default now).
+
 ## 3. Reglas de Integridad & Multi-tenant
 - **Multi-tenant manual:** Las consultas de datos por empresa deben filtrar por `company_id` de sesión cuando aplique. `memberships` y `companies` son el núcleo del aislamiento; el usuario autenticado no debe poder elegir `company_id` arbitrario desde el cliente.
 - **Catálogo global:** `plans`, `features` y `plan_features` no llevan `company_id`; el vínculo del tenant al plan es `companies.plan_id`.
