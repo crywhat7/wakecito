@@ -34,3 +34,10 @@ Cursor debe seguir estrictamente esta convención de nombres en inglés para las
 ## 5. Instrucciones para Cursor
 1. **Seguridad de Tipos:** Generar tipos de TypeScript automáticos mediante Supabase para evitar discrepancias.
 2. **Manejo de Errores:** Implementar bloques `try/catch` en las funciones de la base de datos y devolver mensajes amigables para el usuario.
+
+## 6. PROTOCOLO DE COMUNICACIÓN (API ONLY)
+- **Prohibido:** No utilizar `use server` ni Server Actions.
+- **Arquitectura:** Toda interacción con la DB debe ser vía `fetch` desde el cliente hacia `app/api/[route]/route.ts`.
+- **Estructura de Respuesta:** - Éxito: `{ success: true, data: [...] }`
+    - Error: `{ success: false, error: "Mensaje amigable" }` con el código HTTP correcto (401, 403, 500).
+- **Validación:** El backend (API) debe re-validar los datos con Zod, incluso si el frontend ya lo hizo.

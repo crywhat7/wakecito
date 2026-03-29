@@ -5,6 +5,14 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+    /* Wakecito marca (landing / marketing) */
+    --wakecito-charcoal: #333333;
+    --wakecito-mint: #adfcdc;
+    --wakecito-pale: #e4f1ff;
+    /* Landing (referencia estilo e-commerce suave) */
+    --landing-sky: #e6f0f3;
+    --landing-teal: #074a4b;
+    --landing-coral: #ec4d38;
     --background: oklch(1 0 0);
     --foreground: oklch(0.145 0 0);
     --card: oklch(1 0 0);
@@ -74,8 +82,14 @@
 }
 
 @theme inline {
-    --font-sans: var(--font-sans);
-    --font-heading: var(--font-heading);
+    --font-sans: var(--font-poppins);
+    --font-heading: var(--font-poppins);
+    --color-wakecito-charcoal: var(--wakecito-charcoal);
+    --color-wakecito-mint: var(--wakecito-mint);
+    --color-wakecito-pale: var(--wakecito-pale);
+    --color-landing-sky: var(--landing-sky);
+    --color-landing-teal: var(--landing-teal);
+    --color-landing-coral: var(--landing-coral);
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -122,8 +136,10 @@
     }
   body {
     @apply bg-background text-foreground;
+    /* Poppins: next/font aplica className en body; refuerzo por si algún hijo resetea */
+    font-family: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
     }
   html {
-    @apply font-sans;
+    @apply h-full;
     }
 }
