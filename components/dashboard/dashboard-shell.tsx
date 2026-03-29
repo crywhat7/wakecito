@@ -2,12 +2,9 @@
 
 import type { ReactNode } from "react";
 
-import { AppSidebar } from "@/components/app-sidebar";
-import {
-  SidebarInset,
-  SidebarProvider,
-} from "@/components/ui/sidebar";
+import { AppHeader } from "@/components/app-header";
 import type { PublicSession } from "@/lib/auth/session";
+import { Separator } from "../ui/separator";
 
 export function DashboardShell({
   session,
@@ -17,15 +14,19 @@ export function DashboardShell({
   children: ReactNode;
 }) {
   return (
-    <SidebarProvider>
-      <AppSidebar
+    <main>
+      <AppHeader
         user={{
           name: session.user.name,
           email: session.user.email,
           avatar: "",
         }}
+        company={{ name: session.company.name }}
+        role={session.role}
       />
-      <SidebarInset>{children}</SidebarInset>
-    </SidebarProvider>
+      <div className="p-4 mx-auto max-w-7xl">
+        {children}
+      </div>
+    </main>
   );
 }
