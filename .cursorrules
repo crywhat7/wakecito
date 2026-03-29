@@ -1,3 +1,19 @@
+# WAKECITO - PROTOCOLO DE DESARROLLO (CTO OVERRIDE)
+
+## 1. Fuentes de Verdad (Contexto)
+- **Diseño:** `.wakespecs/diseño.md` (Shadcn Nativo + globals.css).
+- **Técnica:** `.wakespecs/tecnico.md` (Multi-tenant, Auth Propio, SAR Honduras).
+- **Base de Datos:** `app/db/db.md` (Schema en Inglés, Documentación en Español).
+
+## 2. Modo de Operación
+- **Paso a Paso:** No ejecutes múltiples funcionalidades a la vez. Espera mi aprobación después de cada archivo creado o modificado.
+- **Validación:** Antes de escribir código de base de datos, confirma que los nombres de tablas y columnas coinciden con `app/db/db.md`.
+- **API First:** La lógica de servidor debe vivir en `app/api/` y ser consumida mediante validaciones de Zod.
+
+## 3. Restricciones
+- Prohibido usar Supabase Auth o RLS nativo (La seguridad la manejamos nosotros manualmente).
+- Prohibido modificar `components.json` o `globals.css` sin permiso.
+
 # shadcn/ui
 
 > shadcn/ui is a collection of beautifully-designed, accessible components and a code distribution platform. It is built with TypeScript, Tailwind CSS, and Radix UI primitives. It supports multiple frameworks including Next.js, Vite, Remix, Astro, and more. Open Source. Open Code. AI-Ready. It also comes with a command-line tool to install and manage components and a registry system to publish and distribute code.
