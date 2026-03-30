@@ -10,7 +10,6 @@ import {
   IconBuildingBank,
   IconCash,
   IconCreditCard,
-  IconCrown,
   IconDots,
   IconMinus,
   IconPackage,
@@ -323,20 +322,10 @@ export function PosClient() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <h1 className="text-2xl font-semibold tracking-tight">Nueva venta</h1>
           <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" size="sm" className="gap-1.5">
-              <IconCrown className="size-3.5 text-amber-500" stroke={1.5} />
-              Abrir caja
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={nuevaVentaLibre}
-            >
-              Nueva venta libre
-            </Button>
-            <Button type="button" variant="outline" size="sm" disabled>
-              Nuevo gasto
+            <Button type="button" variant="outline" size="sm" asChild>
+              <Link href="/dashboard/historial-facturas">
+                Ver Movimientos del día
+              </Link>
             </Button>
           </div>
         </div>
