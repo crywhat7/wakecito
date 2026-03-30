@@ -47,7 +47,7 @@ export function AppHeader({
   ...props
 }: React.ComponentProps<"header"> & {
   user: { name: string; email: string; avatar?: string }
-  company: { name: string; logoSrc?: string }
+  company: { name: string; logoSrc?: string; planName?: string }
   role?: string
 }) {
   const userWithAvatar = {
@@ -75,8 +75,15 @@ export function AppHeader({
             height={24}
           />
         </div>
-        <span className="truncate text-base font-semibold tracking-tight">
-          {company.name}
+        <span className="min-w-0">
+          <span className="block truncate text-base font-semibold tracking-tight">
+            {company.name}
+          </span>
+          {company.planName ? (
+            <span className="block truncate text-xs text-muted-foreground">
+              {company.planName}
+            </span>
+          ) : null}
         </span>
       </a>
 

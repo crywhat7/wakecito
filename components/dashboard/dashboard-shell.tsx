@@ -8,9 +8,11 @@ import { Separator } from "../ui/separator";
 
 export function DashboardShell({
   session,
+  planName,
   children,
 }: {
   session: PublicSession;
+  planName?: string;
   children: ReactNode;
 }) {
   return (
@@ -21,7 +23,7 @@ export function DashboardShell({
           email: session.user.email,
           avatar: "",
         }}
-        company={{ name: session.company.name }}
+        company={{ name: session.company.name, planName }}
         role={session.role}
       />
       <div className="p-4 mx-auto max-w-[1360px] w-full">

@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import {
   Avatar,
   AvatarFallback,
@@ -89,9 +90,11 @@ export function NavUser({
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem>
-            <IconSparkles />
-            Actualizar plan
+          <DropdownMenuItem asChild>
+            <Link href="/dashboard/actualizar-plan">
+              <IconSparkles />
+              Actualizar plan
+            </Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
