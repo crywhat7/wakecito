@@ -179,7 +179,7 @@ export function CrudCreateClient({
       return (
         <div
           key={n}
-          className="flex items-center gap-2 rounded-lg bg-muted/25 px-2 py-2 md:col-span-2"
+          className="flex items-center gap-2 py-1 md:col-span-2"
         >
           <input
             type="checkbox"
@@ -336,18 +336,15 @@ export function CrudCreateClient({
         {meta
           ? buildFormSections(meta.columns, meta, table, "create", pk).map(
               (section) => (
-                <div
-                  key={section.title}
-                  className="rounded-xl border border-border/70 bg-card p-5 shadow-sm ring-1 ring-black/4 dark:ring-white/6"
-                >
+                <section key={section.title} className="space-y-3">
                   <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                     {section.title}
                   </h2>
-                  <Separator className="my-4 bg-border/70" />
-                  <div className="grid gap-4 md:grid-cols-2 md:gap-x-8 md:gap-y-5">
+                  <Separator className="bg-border/50" />
+                  <div className="grid gap-4 pt-1 md:grid-cols-2 md:gap-x-8 md:gap-y-5">
                     {section.cols.map((col) => renderField(col))}
                   </div>
-                </div>
+                </section>
               ),
             )
           : null}

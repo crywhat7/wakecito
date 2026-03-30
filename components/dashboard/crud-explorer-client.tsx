@@ -286,7 +286,7 @@ export function CrudExplorerClient({
     const it = inputTypeForPg(col.data_type)
     if (it === "checkbox") {
       return (
-        <div key={n} className="flex items-center gap-2 rounded-lg bg-muted/25 px-2 py-2">
+        <div key={n} className="flex items-center gap-2 py-1">
           <input
             type="checkbox"
             id={`f-${n}`}
@@ -699,23 +699,20 @@ export function CrudExplorerClient({
                     </div>
                   ) : null}
                 </CardHeader>
-                <CardContent className="space-y-3 p-4">
-                  <div className="grid gap-2 sm:grid-cols-2">
+                <CardContent className="space-y-5 p-5 pt-4">
+                  <dl className="grid grid-cols-1 gap-x-10 gap-y-5 sm:grid-cols-2">
                     {orderedDisplayCols.map((col) => (
-                      <div
-                        key={col}
-                        className="rounded-lg bg-muted/35 px-3 py-2 ring-1 ring-border/50"
-                      >
-                        <p className="text-[0.65rem] font-semibold uppercase tracking-wide text-muted-foreground">
+                      <div key={col} className="min-w-0">
+                        <dt className="text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">
                           {colLabel(col)}
-                        </p>
-                        <p className="mt-1 line-clamp-3 text-sm font-medium leading-snug text-foreground">
+                        </dt>
+                        <dd className="mt-1 line-clamp-4 text-sm font-medium leading-snug text-foreground">
                           {displayCell(col, row[col])}
-                        </p>
+                        </dd>
                       </div>
                     ))}
-                  </div>
-                  <Separator className="bg-border/60" />
+                  </dl>
+                  <Separator className="bg-border/50" />
                   <div className="flex flex-wrap gap-2">
                     <Button
                       type="button"
@@ -812,14 +809,12 @@ export function CrudExplorerClient({
                     "edit",
                     pk,
                   ).map((section) => (
-                    <div
-                      key={section.title}
-                      className="space-y-3 rounded-xl border border-border/60 bg-muted/15 p-4 shadow-sm"
-                    >
+                    <div key={section.title} className="space-y-3">
                       <h3 className="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                         {section.title}
                       </h3>
-                      <div className="grid gap-3.5">
+                      <Separator className="bg-border/50" />
+                      <div className="grid gap-3.5 pt-1">
                         {section.cols.map((col) => renderFormField(col))}
                       </div>
                     </div>
