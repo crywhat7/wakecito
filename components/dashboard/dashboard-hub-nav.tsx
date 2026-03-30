@@ -41,7 +41,22 @@ const modules: HubModule[] = [
     label: "Facturas",
     iconSrc: "/dashboard-icons/compras.svg",
     kind: "menu",
-    options: [{ key: "historial", label: "Historial de Facturas", href: "/dashboard/historial-facturas" }],
+    options: [
+      { key: "pos", label: "Punto de Venta", href: "/dashboard/punto-de-venta" },
+      { key: "historial", label: "Historial de Facturas", href: "/dashboard/historial-facturas" }
+    ],
+  },
+  {
+    id: "inventarios",
+    label: "Inventarios",
+    iconSrc: "/dashboard-icons/inventario.svg",
+    kind: "menu",
+    options: [
+      { key: "productos", label: "Productos", href: "/dashboard/productos" },
+      { key: "nuevo-producto", label: "Nuevo Producto", href: "/dashboard/productos/nuevo" },
+      { key: "categorias-productos", label: "Categorías de Productos", href: "/dashboard/categorias-productos" },
+      { key: "resumen-inventarios", label: "Resumen de Inventarios", href: "/dashboard/resumen-inventarios" }
+    ],
   },
   {
     id: "clientes",
@@ -57,13 +72,7 @@ const modules: HubModule[] = [
     kind: "menu",
     options: [{ key: "ver", label: "Ver", href: "/dashboard/compras" }],
   },
-  {
-    id: "inventarios",
-    label: "Inventarios",
-    iconSrc: "/dashboard-icons/inventario.svg",
-    kind: "menu",
-    options: [{ key: "ver", label: "Ver", href: "/dashboard/productos" }],
-  },
+  
   {
     id: "configuracion",
     label: "Configuración",

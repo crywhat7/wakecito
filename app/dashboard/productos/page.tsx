@@ -6,7 +6,7 @@ export default function ProductosPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Productos</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Catálogo visual (solo lectura). Para dar de alta usá{" "}
+          Lista de Productos, puedes crear nuevos productos en: {" "}
           <a
             className="font-medium text-foreground underline-offset-4 hover:underline"
             href="/dashboard/productos/nuevo"

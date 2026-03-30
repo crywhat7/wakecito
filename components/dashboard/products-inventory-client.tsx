@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { IconPackage, IconSearch } from "@tabler/icons-react";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -140,58 +141,63 @@ export function ProductsInventoryClient() {
           const price = Number.parseFloat(p.price);
           const catName = p.category_id ? catById.get(p.category_id) : null;
           return (
-            <Card
+            <Link
               key={p.id}
-              size="sm"
-              className="overflow-hidden border-border/80 shadow-sm ring-1 ring-foreground/5"
+              href={`/dashboard/productos/editar/${p.id}`}
+              className="block rounded-lg text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <CardContent className="flex flex-col gap-3 p-0">
-                <div className="relative flex aspect-4/3 items-center justify-center bg-muted/50">
-                  {p.image_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={p.image_url}
-                      alt=""
-                      className="size-full object-cover"
-                    />
-                  ) : (
-                    <IconPackage
-                      className="size-16 text-muted-foreground/60"
-                      stroke={1}
-                    />
-                  )}
-                </div>
-                <div className="flex flex-col gap-2 px-4 pb-3 pt-0">
-                  <p className="line-clamp-2 min-h-10 text-sm font-semibold leading-snug">
-                    {p.name}
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <p className="text-muted-foreground">Precio</p>
-                      <p className="font-semibold tabular-nums">
-                        {formatMoney(
-                          Number.isNaN(price) ? 0 : price,
-                          p.currency,
-                        )}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-muted-foreground">Stock</p>
-                      <p className="font-semibold tabular-nums">
-                        {p.stock_quantity}
-                      </p>
-                    </div>
+              <Card
+                size="sm"
+                className="h-full overflow-hidden border-border/80 shadow-sm ring-1 ring-foreground/5 transition-colors hover:bg-muted/25"
+              >
+                <CardContent className="flex flex-col gap-3 p-0">
+                  <div className="relative flex aspect-4/3 items-center justify-center bg-muted/50">
+                    {p.image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={p.image_url}
+                        alt=""
+                        className="size-full object-cover"
+                      />
+                    ) : (
+                      <IconPackage
+                        className="size-16 text-muted-foreground/60"
+                        stroke={1}
+                      />
+                    )}
                   </div>
-                  {catName ? (
-                    <div className="flex flex-wrap gap-1">
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-[0.65rem] font-medium text-muted-foreground">
-                        {catName}
-                      </span>
+                  <div className="flex flex-col gap-2 px-4 pb-3 pt-0">
+                    <p className="line-clamp-2 min-h-10 text-sm font-semibold leading-snug">
+                      {p.name}
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <p className="text-muted-foreground">Precio</p>
+                        <p className="font-semibold tabular-nums">
+                          {formatMoney(
+                            Number.isNaN(price) ? 0 : price,
+                            p.currency,
+                          )}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-muted-foreground">Stock</p>
+                        <p className="font-semibold tabular-nums">
+                          {p.stock_quantity}
+                        </p>
+                      </div>
                     </div>
-                  ) : null}
-                </div>
-              </CardContent>
-            </Card>
+                    {catName ? (
+                      <div className="flex flex-wrap gap-1">
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-[0.65rem] font-medium text-muted-foreground">
+                          {catName}
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           );
         })}
       </div>
