@@ -169,6 +169,40 @@ Valores de variante por producto (nombre libre: Rojo, M, etc.).
 - `created_at`: timestamptz.
 - Unique: (`product_id`, `name`).
 
+### Tabla: `invoices`
+Factura / venta POS por empresa.
+
+- `id`: uuid (PK).
+- `company_id`: uuid (FK → `companies`, cascade).
+- `client_id`: uuid (FK → `clients`, on delete set null) — `NULL` = consumidor final.
+- `sale_date`: date (not null).
+- `status`: text (not null, default `paid`) — `paid` | `credit`.
+- `currency`: text (default `HNL`).
+- `subtotal_amount`, `discount_amount`, `tax_amount`, `total_amount`: numeric(14,2).
+- `payment_method`: text — `cash` | `card` | `transfer` | `other` (ventas a crédito pueden dejarlo null según reglas de negocio).
+- `installments`: integer (opcional; legado / reservado).
+- `credit_due_date`: date (opcional) — fecha tentativa de cobro en ventas `credit`.
+- `invoice_number`: text (opcional; correlativo SAR o interno).
+- `notes`: text.
+- `created_by_user_id`: uuid (FK → `users`, on delete set null).
+- `created_at`, `updated_at`: timestamptz.
+- Índice sugerido: (`company_id`, `sale_date` DESC).
+
+### Tabla: `invoice_lines`
+Detalle de líneas de factura; guarda snapshot de nombre/SKU/precio al momento de la venta.
+
+- `id`: uuid (PK).
+- `invoice_id`: uuid (FK → `invoices`, cascade).
+- `line_number`: integer (not null).
+- `product_id`: uuid (FK → `products`, on delete set null).
+- `product_name`: text (not null).
+- `sku`: text.
+- `quantity`: numeric(14,4) (not null).
+- `unit_price`: numeric(14,4) (not null).
+- `line_total`: numeric(14,2) (not null).
+- `created_at`: timestamptz.
+- Unique: (`invoice_id`, `line_number`).
+
 ## 3. Reglas de Integridad & Multi-tenant
 - **Multi-tenant manual:** Las consultas de datos por empresa deben filtrar por `company_id` de sesión cuando aplique. `memberships` y `companies` son el núcleo del aislamiento; el usuario autenticado no debe poder elegir `company_id` arbitrario desde el cliente.
 - **Catálogo global:** `plans`, `features`, `plan_features` y `units_of_measure` no llevan `company_id`; el vínculo del tenant al plan es `companies.plan_id`.

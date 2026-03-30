@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { IconBuildingStore, IconCash, IconPackage, IconReceipt } from "@tabler/icons-react"
 
 import { NavUser } from "@/components/nav-user"
@@ -11,17 +12,17 @@ const quickActions = [
   {
     label: "Abrir POS",
     icon: IconBuildingStore,
-    href: "#",
+    href: "/dashboard/punto-de-venta",
   },
   {
     label: "Nueva Venta",
     icon: IconCash,
-    href: "#",
+    href: "/dashboard/punto-de-venta",
   },
   {
     label: "Nuevo Producto",
     icon: IconPackage,
-    href: "#",
+    href: "/dashboard/productos/nuevo",
   },
   {
     label: "Nuevo Gasto",
@@ -91,10 +92,10 @@ export function AppHeader({
             className="gap-2 font-normal"
             asChild
           >
-            <a href={href}>
+            <Link href={href}>
               <Icon className="size-4 shrink-0 opacity-70" stroke={1.5} />
               {label}
-            </a>
+            </Link>
           </Button>
         ))}
       </nav>

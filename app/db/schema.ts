@@ -298,6 +298,75 @@ export const productVariantValues = pgTable(
   ],
 );
 
+/** Venta / factura POS por empresa. */
+export const invoices = pgTable("invoices", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  company_id: uuid("company_id")
+    .notNull()
+    .references(() => companies.id, { onDelete: "cascade" }),
+  client_id: uuid("client_id").references(() => clients.id, {
+    onDelete: "set null",
+  }),
+  sale_date: date("sale_date").notNull(),
+  /** paid | credit */
+  status: text("status").notNull().default("paid"),
+  currency: text("currency").notNull().default("HNL"),
+  subtotal_amount: numeric("subtotal_amount", { precision: 14, scale: 2 })
+    .notNull()
+    .default("0"),
+  discount_amount: numeric("discount_amount", { precision: 14, scale: 2 })
+    .notNull()
+    .default("0"),
+  tax_amount: numeric("tax_amount", { precision: 14, scale: 2 })
+    .notNull()
+    .default("0"),
+  total_amount: numeric("total_amount", { precision: 14, scale: 2 })
+    .notNull()
+    .default("0"),
+  /** cash | card | transfer | other */
+  payment_method: text("payment_method"),
+  installments: integer("installments"),
+  /** Fecha tentativa de pago (ventas a crédito). */
+  credit_due_date: date("credit_due_date"),
+  invoice_number: text("invoice_number"),
+  notes: text("notes"),
+  created_by_user_id: uuid("created_by_user_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  created_at: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updated_at: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/** Líneas de detalle de factura (snapshot de producto al momento de la venta). */
+export const invoiceLines = pgTable(
+  "invoice_lines",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    invoice_id: uuid("invoice_id")
+      .notNull()
+      .references(() => invoices.id, { onDelete: "cascade" }),
+    line_number: integer("line_number").notNull(),
+    product_id: uuid("product_id").references(() => products.id, {
+      onDelete: "set null",
+    }),
+    product_name: text("product_name").notNull(),
+    sku: text("sku"),
+    quantity: numeric("quantity", { precision: 14, scale: 4 }).notNull(),
+    unit_price: numeric("unit_price", { precision: 14, scale: 4 }).notNull(),
+    line_total: numeric("line_total", { precision: 14, scale: 2 }).notNull(),
+    created_at: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    unique("invoice_lines_invoice_line_unique").on(t.invoice_id, t.line_number),
+  ],
+);
+
 export type User = InferSelectModel<typeof users>;
 export type NewUser = InferInsertModel<typeof users>;
 
@@ -341,3 +410,9 @@ export type ProductVariantValue = InferSelectModel<typeof productVariantValues>;
 export type NewProductVariantValue = InferInsertModel<
   typeof productVariantValues
 >;
+
+export type Invoice = InferSelectModel<typeof invoices>;
+export type NewInvoice = InferInsertModel<typeof invoices>;
+
+export type InvoiceLine = InferSelectModel<typeof invoiceLines>;
+export type NewInvoiceLine = InferInsertModel<typeof invoiceLines>;
