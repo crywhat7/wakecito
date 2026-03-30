@@ -9,11 +9,11 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 const quickActions = [
-  {
-    label: "Abrir POS",
-    icon: IconBuildingStore,
-    href: "/dashboard/punto-de-venta",
-  },
+  // {
+  //   label: "Abrir POS",
+  //   icon: IconBuildingStore,
+  //   href: "/dashboard/punto-de-venta",
+  // },
   {
     label: "Nueva Venta",
     icon: IconCash,

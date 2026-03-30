@@ -58,21 +58,20 @@ const modules: HubModule[] = [
       { key: "resumen-inventarios", label: "Resumen de Inventarios", href: "/dashboard/resumen-inventarios" }
     ],
   },
-  {
-    id: "clientes",
-    label: "Clientes",
-    iconSrc: "/dashboard-icons/clientes.svg",
-    kind: "menu",
-    options: [{ key: "ver", label: "Ver", href: "/dashboard/clientes" }],
-  },
-  {
-    id: "compras",
-    label: "Compras",
-    iconSrc: "/dashboard-icons/compras.svg",
-    kind: "menu",
-    options: [{ key: "ver", label: "Ver", href: "/dashboard/compras" }],
-  },
-  
+  // {
+  //   id: "clientes",
+  //   label: "Clientes",
+  //   iconSrc: "/dashboard-icons/clientes.svg",
+  //   kind: "menu",
+  //   options: [{ key: "ver", label: "Ver", href: "/dashboard/clientes" }],
+  // },
+  // {
+  //   id: "compras",
+  //   label: "Compras",
+  //   iconSrc: "/dashboard-icons/compras.svg",
+  //   kind: "menu",
+  //   options: [{ key: "ver", label: "Ver", href: "/dashboard/compras" }],
+  // },
   {
     id: "configuracion",
     label: "Configuración",
