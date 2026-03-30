@@ -8,43 +8,27 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Separator } from "@/components/ui/separator"
+import {
+  buildFormSections,
+  hideCompanyIdField,
+  hideFromListView,
+  humanize,
+  inputTypeForPg,
+  type ColumnMeta,
+  type MetaResponse,
+} from "@/lib/crud/crud-form-shared"
+import { crudCreateCanonicalPath } from "@/lib/crud/create-path"
 import { cn } from "@/lib/utils"
 import { isCrudTableKey, type CrudTableKey } from "@/lib/crud/registry"
 
 type TableInfo = { key: string; label: string }
-
-type ColumnMeta = {
-  column_name: string
-  data_type: string
-  is_nullable: "YES" | "NO"
-  column_default: string | null
-  foreign_table_name: string | null
-  foreign_column_name: string | null
-}
-
-type MetaResponse = {
-  columns: ColumnMeta[]
-  primaryKey: string[]
-  foreignKeys: unknown[]
-  policy: {
-    forbidInsert: boolean
-    forbidDelete: boolean
-    excludeColumns: string[]
-    readOnlyColumns: string[]
-  }
-}
 
 export type CrudExplorerClientProps = {
   /** explorer: selector de tabla (pantalla /dashboard/crud). doctype: tabla fija. */
   variant?: "explorer" | "doctype"
   /** Nombre PostgreSQL de la tabla (debe estar en lista blanca CRUD). */
   fixedTable?: CrudTableKey
-}
-
-function humanize(snake: string): string {
-  return snake
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
 function formatCell(v: unknown): string {
@@ -55,27 +39,34 @@ function formatCell(v: unknown): string {
   return String(v)
 }
 
-function inputTypeForPg(dataType: string): string {
-  const t = dataType.toLowerCase()
-  if (t.includes("date") && !t.includes("timestamp")) return "date"
-  if (t.includes("timestamp")) return "datetime-local"
-  if (t === "boolean") return "checkbox"
-  if (t.includes("int") || t === "numeric" || t === "real" || t === "double")
-    return "number"
-  return "text"
+function formatEnumColumn(column: string, v: unknown): string | null {
+  if (v === null || v === undefined) return null
+  const s = String(v)
+  if (column === "product_condition") {
+    const m: Record<string, string> = {
+      new: "Nuevo",
+      pre_order: "Preorden",
+      post_exhibit: "Post exhibición",
+      used: "Usado",
+    }
+    return m[s] ?? s
+  }
+  if (column === "shipping_insurance") {
+    const m: Record<string, string> = {
+      required: "Obligatorio",
+      optional: "Opcional",
+      none: "Sin seguro",
+    }
+    return m[s] ?? s
+  }
+  return null
 }
 
-function hideCompanyIdField(tbl: string, col: string): boolean {
-  return (
-    col === "company_id" &&
-    (tbl === "memberships" || tbl === "clients" || tbl === "purchases")
-  )
-}
-
-function cardHeading(
-  row: Record<string, unknown>,
-  pk: string,
-): { title: string; subtitle?: string } {
+function cardHeading(row: Record<string, unknown>, pk: string): {
+  title: string
+  subtitle?: string
+  badges: string[]
+} {
   const pick = (keys: string[]) => {
     for (const k of keys) {
       const v = row[k]
@@ -86,10 +77,30 @@ function cardHeading(
     return null
   }
   const title =
-    pick(["name", "reference", "supplier_name", "email", "title"]) ??
-    `ID ${String(row[pk] ?? "").slice(0, 8)}…`
-  const subtitle = pick(["phone", "rtn", "purchase_date", "total_amount"])
-  return { title, subtitle: subtitle ?? undefined }
+    pick(["name", "sku", "reference", "supplier_name", "email", "title"]) ??
+    "Registro"
+  const extra = pick(["phone", "rtn", "purchase_date", "total_amount"])
+  const parts: string[] = []
+  const sku = row.sku
+  if (sku !== null && sku !== undefined && String(sku).trim() !== "")
+    parts.push(String(sku))
+  const price = row.price
+  if (price !== null && price !== undefined && String(price).trim() !== "") {
+    const cur = row.currency != null ? String(row.currency) : ""
+    parts.push(`${price} ${cur}`.trim())
+  }
+  const st = row.stock_quantity
+  if (st !== null && st !== undefined && String(st) !== "")
+    parts.push(`Stock ${st}`)
+  const merged = [extra, parts.length ? parts.join(" · ") : null]
+    .filter(Boolean)
+    .join(" · ")
+  const badges: string[] = []
+  if (row.is_active === true) badges.push("Activo")
+  if (row.is_active === false) badges.push("Inactivo")
+  if (row.show_in_web_catalog === true) badges.push("En catálogo web")
+  if (row.show_in_web_catalog === false) badges.push("Fuera del catálogo")
+  return { title, subtitle: merged || undefined, badges }
 }
 
 export function CrudExplorerClient({
@@ -112,18 +123,21 @@ export function CrudExplorerClient({
   const [loading, setLoading] = React.useState(false)
   const [metaErr, setMetaErr] = React.useState<string | null>(null)
 
-  const [listView, setListView] = React.useState<"table" | "cards">("table")
+  const [listView, setListView] = React.useState<"table" | "cards">("cards")
 
   const [byColumn, setByColumn] = React.useState<Record<string, string>>({})
+  const [byTableTitle, setByTableTitle] = React.useState<Record<string, string>>(
+    {},
+  )
   const [byUi, setByUi] = React.useState<Record<string, string>>({})
 
   const [formPanelOpen, setFormPanelOpen] = React.useState(false)
-  const [formMode, setFormMode] = React.useState<"create" | "edit">("create")
   const [editingId, setEditingId] = React.useState<string | null>(null)
   const [formValues, setFormValues] = React.useState<Record<string, string>>({})
   const [fkCache, setFkCache] = React.useState<
     Record<string, { value: string; label: string }[]>
   >({})
+  const fkRequestedRef = React.useRef<Set<string>>(new Set())
   const [formErr, setFormErr] = React.useState<string | null>(null)
   const [saving, setSaving] = React.useState(false)
 
@@ -143,12 +157,14 @@ export function CrudExplorerClient({
             success: true
             data: {
               byColumn: Record<string, string>
+              byTableTitle: Record<string, string>
               byUi: Record<string, string>
             }
           }
         | { success: false }
       if (json.success) {
         setByColumn(json.data.byColumn)
+        setByTableTitle(json.data.byTableTitle ?? {})
         setByUi(json.data.byUi)
       }
     })()
@@ -179,6 +195,134 @@ export function CrudExplorerClient({
     },
     [table, byColumn],
   )
+
+  const pk = meta?.primaryKey[0] ?? "id"
+
+  const orderedDisplayCols = React.useMemo(() => {
+    if (!meta || !table) return []
+    const primary = meta.primaryKey[0] ?? "id"
+    return meta.columns
+      .map((c) => c.column_name)
+      .filter((c) => !hideFromListView(table, c, primary))
+  }, [meta, table])
+
+  const displayCell = React.useCallback(
+    (col: string, value: unknown) => {
+      if (typeof value === "boolean") {
+        return value ? "Sí" : "No"
+      }
+      const enumVal = formatEnumColumn(col, value)
+      if (enumVal !== null) return enumVal
+      const colMeta = meta?.columns.find((c) => c.column_name === col)
+      if (
+        colMeta?.foreign_table_name &&
+        value !== null &&
+        value !== undefined &&
+        String(value) !== ""
+      ) {
+        const opts = fkCache[col]
+        if (opts === undefined) return "…"
+        const id = String(value)
+        const hit = opts.find((o) => o.value === id)
+        return hit?.label ?? "—"
+      }
+      return formatCell(value)
+    },
+    [meta, fkCache],
+  )
+
+  const renderFormField = (col: ColumnMeta): React.ReactNode => {
+    if (!meta || !table) return null
+    const n = col.column_name
+    if (meta.policy.readOnlyColumns.includes(n) && n !== pk) {
+      return (
+        <div key={n} className="grid gap-1.5">
+          <Label className="text-xs font-medium">
+            {colLabel(n)}
+            <span className="ml-1 font-normal text-muted-foreground">
+              ({ui("crud.readonly", "solo lectura")})
+            </span>
+          </Label>
+          <Input
+            value={formValues[n] ?? ""}
+            readOnly
+            disabled
+            className="bg-muted/40"
+          />
+        </div>
+      )
+    }
+
+    if (col.foreign_table_name) {
+      const opts = fkCache[n] ?? []
+      return (
+        <div key={n} className="grid gap-1.5">
+          <Label htmlFor={`f-${n}`} className="text-xs font-medium">
+            {colLabel(n)}
+          </Label>
+          <select
+            id={`f-${n}`}
+            className={cn(
+              "min-h-9 w-full rounded-lg border border-input bg-input/25 px-3 py-2 text-sm",
+              "outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30",
+              "dark:bg-input/35",
+            )}
+            value={formValues[n] ?? ""}
+            onChange={(e) =>
+              setFormValues((v) => ({ ...v, [n]: e.target.value }))
+            }
+          >
+            <option value="">Seleccionar…</option>
+            {opts.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )
+    }
+
+    const it = inputTypeForPg(col.data_type)
+    if (it === "checkbox") {
+      return (
+        <div key={n} className="flex items-center gap-2 rounded-lg bg-muted/25 px-2 py-2">
+          <input
+            type="checkbox"
+            id={`f-${n}`}
+            className="size-4 rounded border-input"
+            checked={formValues[n] === "true"}
+            onChange={(e) =>
+              setFormValues((v) => ({
+                ...v,
+                [n]: e.target.checked ? "true" : "false",
+              }))
+            }
+          />
+          <Label htmlFor={`f-${n}`} className="font-normal">
+            {colLabel(n)}
+          </Label>
+        </div>
+      )
+    }
+
+    return (
+      <div key={n} className="grid gap-1.5">
+        <Label htmlFor={`f-${n}`} className="text-xs font-medium">
+          {colLabel(n)}
+        </Label>
+        <Input
+          id={`f-${n}`}
+          type={it === "number" ? "number" : it}
+          className="min-h-9 rounded-lg border-input bg-input/25 dark:bg-input/35"
+          value={formValues[n] ?? ""}
+          onChange={(e) =>
+            setFormValues((v) => ({ ...v, [n]: e.target.value }))
+          }
+        />
+      </div>
+    )
+  }
 
   const refetch = React.useCallback(async () => {
     if (!table) return
@@ -230,53 +374,43 @@ export function CrudExplorerClient({
   }, [refetch])
 
   React.useEffect(() => {
+    fkRequestedRef.current = new Set()
     setFkCache({})
   }, [table])
 
-  const pk = meta?.primaryKey[0] ?? "id"
-
-  const loadFk = React.useCallback(
-    async (column: string) => {
-      if (!table || column in fkCache) return
-      const res = await fetch(
-        `/api/crud/${table}/fk-options?column=${encodeURIComponent(column)}`,
-        { credentials: "include" },
-      )
-      const json = (await res.json()) as
-        | { success: true; data: { options: { value: string; label: string }[] } }
-        | { success: false }
-      if (json.success) {
-        setFkCache((prev) => ({ ...prev, [column]: json.data.options }))
-      }
-    },
-    [table, fkCache],
-  )
-
-  function openCreate() {
-    if (!meta) return
-    setFormMode("create")
-    setEditingId(null)
-    setFormErr(null)
-    const next: Record<string, string> = {}
-    for (const c of meta.columns) {
-      const n = c.column_name
-      if (meta.policy.excludeColumns.includes(n)) continue
-      if (meta.policy.readOnlyColumns.includes(n)) continue
-      if (hideCompanyIdField(table, n)) continue
-      next[n] = ""
+  const loadFk = React.useCallback(async (column: string) => {
+    if (!table) return
+    if (fkRequestedRef.current.has(column)) return
+    fkRequestedRef.current.add(column)
+    const res = await fetch(
+      `/api/crud/${table}/fk-options?column=${encodeURIComponent(column)}`,
+      { credentials: "include" },
+    )
+    const json = (await res.json()) as
+      | { success: true; data: { options: { value: string; label: string }[] } }
+      | { success: false }
+    if (json.success) {
+      setFkCache((prev) => ({ ...prev, [column]: json.data.options }))
     }
-    setFormValues(next)
-    setFormPanelOpen(true)
+  }, [table])
+
+  React.useEffect(() => {
+    if (!table || !meta) return
     for (const c of meta.columns) {
       if (c.foreign_table_name) {
         void loadFk(c.column_name)
       }
     }
+  }, [table, meta, loadFk])
+
+  function goToCreate() {
+    if (!table || !meta || meta.policy.forbidInsert) return
+    if (!isCrudTableKey(table)) return
+    router.push(crudCreateCanonicalPath(table))
   }
 
   function openEdit(row: Record<string, unknown>) {
     if (!meta) return
-    setFormMode("edit")
     const id = String(row[pk] ?? "")
     setEditingId(id)
     setFormErr(null)
@@ -318,15 +452,8 @@ export function CrudExplorerClient({
       for (const [k, v] of Object.entries(formValues)) {
         const col = meta.columns.find((c) => c.column_name === k)
         if (!col) continue
-        if (formMode === "create") {
-          if (meta.policy.readOnlyColumns.includes(k)) continue
-          if (meta.policy.excludeColumns.includes(k)) continue
-          if (hideCompanyIdField(table, k)) continue
-        }
-        if (formMode === "edit") {
-          if (meta.policy.readOnlyColumns.includes(k)) continue
-          if (k === pk) continue
-        }
+        if (meta.policy.readOnlyColumns.includes(k)) continue
+        if (k === pk) continue
         if (v === "") {
           payload[k] = null
         } else if (col.data_type === "boolean") {
@@ -343,21 +470,7 @@ export function CrudExplorerClient({
         }
       }
 
-      if (formMode === "create") {
-        const res = await fetch(`/api/crud/${table}`, {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        })
-        const json = (await res.json()) as
-          | { success: true }
-          | { success: false; error: string }
-        if (!json.success) {
-          setFormErr(json.error)
-          return
-        }
-      } else if (editingId) {
+      if (editingId) {
         const res = await fetch(`/api/crud/${table}/${editingId}`, {
           method: "PATCH",
           credentials: "include",
@@ -399,11 +512,6 @@ export function CrudExplorerClient({
     await refetch()
   }
 
-  const columnKeys =
-    rows.length > 0
-      ? Object.keys(rows[0])
-      : (meta?.columns.map((c) => c.column_name) ?? [])
-
   if (!isDoctype && tablesErr) {
     return (
       <p className="text-sm text-destructive" role="alert">
@@ -442,7 +550,7 @@ export function CrudExplorerClient({
             >
               {tables.map((t) => (
                 <option key={t.key} value={t.key}>
-                  {t.label} ({t.key})
+                  {byTableTitle[t.key] ?? t.label}
                 </option>
               ))}
             </select>
@@ -477,7 +585,7 @@ export function CrudExplorerClient({
           variant="outline"
           size="sm"
           disabled={!meta || meta.policy.forbidInsert}
-          onClick={openCreate}
+          onClick={goToCreate}
         >
           {ui("crud.new_record", "Nuevo registro")}
         </Button>
@@ -506,7 +614,7 @@ export function CrudExplorerClient({
             <table className="w-full border-collapse text-left text-xs">
               <thead>
                 <tr className="border-b border-border bg-muted/40">
-                  {columnKeys.map((col) => (
+                  {orderedDisplayCols.map((col) => (
                     <th key={col} className="px-3 py-2 font-medium">
                       {colLabel(col)}
                     </th>
@@ -522,12 +630,12 @@ export function CrudExplorerClient({
                       key={rid}
                       className="border-b border-border/60 hover:bg-muted/20"
                     >
-                      {columnKeys.map((col) => (
+                      {orderedDisplayCols.map((col) => (
                         <td
                           key={col}
                           className="max-w-48 truncate px-3 py-1.5"
                         >
-                          {formatCell(row[col])}
+                          {displayCell(col, row[col])}
                         </td>
                       ))}
                       <td className="whitespace-nowrap px-3 py-1.5">
@@ -562,49 +670,66 @@ export function CrudExplorerClient({
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {rows.map((row) => {
             const rid = String(row[pk] ?? "")
-            const { title, subtitle } = cardHeading(row, pk)
+            const { title, subtitle, badges } = cardHeading(row, pk)
             return (
-              <Card key={rid} className="overflow-hidden">
-                <CardHeader className="border-b border-border/60 py-3">
-                  <CardTitle className="text-sm leading-tight">{title}</CardTitle>
+              <Card
+                key={rid}
+                className="overflow-hidden border-border/80 shadow-sm ring-1 ring-black/4 transition-[box-shadow,transform] hover:shadow-md dark:ring-white/6"
+              >
+                <CardHeader className="space-y-2 border-b border-border/60 bg-linear-to-br from-primary/6 via-muted/50 to-muted/30 py-4">
+                  <CardTitle className="text-base font-semibold leading-snug tracking-tight">
+                    {title}
+                  </CardTitle>
                   {subtitle ? (
-                    <p className="text-xs text-muted-foreground">{subtitle}</p>
+                    <p className="text-sm text-muted-foreground">{subtitle}</p>
+                  ) : null}
+                  {badges.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {badges.map((b) => (
+                        <span
+                          key={b}
+                          className="rounded-full bg-background/80 px-2 py-0.5 text-[0.65rem] font-medium text-foreground ring-1 ring-border/80"
+                        >
+                          {b}
+                        </span>
+                      ))}
+                    </div>
                   ) : null}
                 </CardHeader>
-                <CardContent className="space-y-1.5 py-3 text-xs">
-                  {columnKeys
-                    .filter((c) => c !== pk)
-                    .slice(0, 6)
-                    .map((col) => (
+                <CardContent className="space-y-3 p-4">
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {orderedDisplayCols.map((col) => (
                       <div
                         key={col}
-                        className="flex justify-between gap-2 border-b border-border/40 py-1 last:border-0"
+                        className="rounded-lg bg-muted/35 px-3 py-2 ring-1 ring-border/50"
                       >
-                        <span className="shrink-0 text-muted-foreground">
+                        <p className="text-[0.65rem] font-semibold uppercase tracking-wide text-muted-foreground">
                           {colLabel(col)}
-                        </span>
-                        <span className="truncate text-right font-medium">
-                          {formatCell(row[col])}
-                        </span>
+                        </p>
+                        <p className="mt-1 line-clamp-3 text-sm font-medium leading-snug text-foreground">
+                          {displayCell(col, row[col])}
+                        </p>
                       </div>
                     ))}
-                  <div className="flex gap-2 pt-2">
+                  </div>
+                  <Separator className="bg-border/60" />
+                  <div className="flex flex-wrap gap-2">
                     <Button
                       type="button"
-                      variant="outline"
-                      size="xs"
+                      variant="default"
+                      size="sm"
                       onClick={() => openEdit(row)}
                     >
                       {ui("crud.edit", "Editar")}
                     </Button>
                     <Button
                       type="button"
-                      variant="ghost"
-                      size="xs"
-                      className="text-destructive"
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive hover:bg-destructive/10"
                       disabled={meta?.policy.forbidDelete}
                       onClick={() => removeRow(rid)}
                     >
@@ -651,21 +776,22 @@ export function CrudExplorerClient({
         {formPanelOpen ? (
           <aside
             className={cn(
-              "w-full shrink-0 rounded-lg border border-border bg-card text-card-foreground shadow-sm ring-1 ring-foreground/10",
-              "lg:sticky lg:top-4 lg:max-h-[min(100vh-6rem,56rem)] lg:w-[min(100%,26rem)] lg:overflow-y-auto",
+              "w-full shrink-0 overflow-hidden rounded-xl border border-border/80 bg-card text-card-foreground shadow-md ring-1 ring-black/4 dark:ring-white/6",
+              "lg:sticky lg:top-4 lg:max-h-[min(100vh-6rem,56rem)] lg:w-[min(100%,34rem)] lg:overflow-y-auto",
             )}
-            aria-label={
-              formMode === "create"
-                ? ui("crud.new_record", "Nuevo registro")
-                : ui("crud.edit_record", "Editar registro")
-            }
+            aria-label={ui("crud.edit_record", "Editar registro")}
           >
-            <div className="sticky top-0 z-1 flex items-start justify-between gap-2 border-b border-border bg-card px-4 py-3">
-              <h2 className="font-heading text-sm font-medium leading-tight">
-                {formMode === "create"
-                  ? ui("crud.new_record", "Nuevo registro")
-                  : ui("crud.edit_record", "Editar registro")}
-              </h2>
+            <div className="sticky top-0 z-1 flex items-start justify-between gap-2 border-b border-border/70 bg-linear-to-r from-primary/7 via-muted/40 to-muted/25 px-4 py-3.5">
+              <div>
+                <h2 className="font-heading text-sm font-semibold leading-tight">
+                  {ui("crud.edit_record", "Editar registro")}
+                </h2>
+                {table ? (
+                  <p className="mt-0.5 text-[0.65rem] text-muted-foreground">
+                    {byTableTitle[table] ?? humanize(table)}
+                  </p>
+                ) : null}
+              </div>
               <Button
                 type="button"
                 variant="ghost"
@@ -677,107 +803,33 @@ export function CrudExplorerClient({
                 <IconX className="size-4" stroke={1.5} />
               </Button>
             </div>
-            <div className="grid gap-4 p-4 pb-6">
-              {meta?.columns.map((col) => {
-                const n = col.column_name
-                if (meta.policy.excludeColumns.includes(n)) return null
-                if (formMode === "create") {
-                  if (meta.policy.readOnlyColumns.includes(n)) return null
-                  if (hideCompanyIdField(table, n)) return null
-                }
-                if (formMode === "edit" && n === pk) {
-                  return (
-                    <div key={n} className="grid gap-1.5">
-                      <Label>
-                        {colLabel(n)} ({ui("crud.readonly", "solo lectura")})
-                      </Label>
-                      <Input value={formValues[n] ?? ""} readOnly disabled />
+            <div className="space-y-5 p-4 pb-6">
+              {meta
+                ? buildFormSections(
+                    meta.columns,
+                    meta,
+                    table,
+                    "edit",
+                    pk,
+                  ).map((section) => (
+                    <div
+                      key={section.title}
+                      className="space-y-3 rounded-xl border border-border/60 bg-muted/15 p-4 shadow-sm"
+                    >
+                      <h3 className="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                        {section.title}
+                      </h3>
+                      <div className="grid gap-3.5">
+                        {section.cols.map((col) => renderFormField(col))}
+                      </div>
                     </div>
-                  )
-                }
-                if (
-                  formMode === "edit" &&
-                  meta.policy.readOnlyColumns.includes(n)
-                ) {
-                  return (
-                    <div key={n} className="grid gap-1.5">
-                      <Label>
-                        {colLabel(n)} ({ui("crud.readonly", "solo lectura")})
-                      </Label>
-                      <Input value={formValues[n] ?? ""} readOnly disabled />
-                    </div>
-                  )
-                }
-
-                if (col.foreign_table_name) {
-                  const opts = fkCache[n] ?? []
-                  return (
-                    <div key={n} className="grid gap-1.5">
-                      <Label htmlFor={`f-${n}`}>
-                        {colLabel(n)}
-                        <span className="ml-1 font-normal text-muted-foreground">
-                          → {col.foreign_table_name}
-                        </span>
-                      </Label>
-                      <select
-                        id={`f-${n}`}
-                        className={cn(
-                          "h-7 w-full rounded-md border border-input bg-input/20 px-2 text-sm",
-                        )}
-                        value={formValues[n] ?? ""}
-                        onChange={(e) =>
-                          setFormValues((v) => ({ ...v, [n]: e.target.value }))
-                        }
-                      >
-                        <option value="">—</option>
-                        {opts.map((o) => (
-                          <option key={o.value} value={o.value}>
-                            {o.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )
-                }
-
-                const it = inputTypeForPg(col.data_type)
-                if (it === "checkbox") {
-                  return (
-                    <div key={n} className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id={`f-${n}`}
-                        checked={formValues[n] === "true"}
-                        onChange={(e) =>
-                          setFormValues((v) => ({
-                            ...v,
-                            [n]: e.target.checked ? "true" : "false",
-                          }))
-                        }
-                      />
-                      <Label htmlFor={`f-${n}`}>{colLabel(n)}</Label>
-                    </div>
-                  )
-                }
-
-                return (
-                  <div key={n} className="grid gap-1.5">
-                    <Label htmlFor={`f-${n}`}>{colLabel(n)}</Label>
-                    <Input
-                      id={`f-${n}`}
-                      type={it === "number" ? "number" : it}
-                      value={formValues[n] ?? ""}
-                      onChange={(e) =>
-                        setFormValues((v) => ({ ...v, [n]: e.target.value }))
-                      }
-                    />
-                  </div>
-                )
-              })}
+                  ))
+                : null}
               {formErr ? (
                 <p className="text-xs text-destructive">{formErr}</p>
               ) : null}
-              <div className="flex flex-wrap gap-2 border-t border-border/80 pt-4">
+              <Separator className="bg-border/70" />
+              <div className="flex flex-wrap gap-2">
                 <Button type="button" onClick={submitForm} disabled={saving}>
                   {saving ? "Guardando…" : ui("crud.save", "Guardar")}
                 </Button>

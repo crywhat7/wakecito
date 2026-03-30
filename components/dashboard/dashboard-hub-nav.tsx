@@ -65,6 +65,11 @@ const actions = [
 ] as const
 
 function hrefFor(moduleId: string, suffix: "" | "nuevo" | "historial") {
+  if (moduleId === "inventarios") {
+    if (suffix === "") return "/dashboard/productos"
+    if (suffix === "nuevo") return "/dashboard/productos/nuevo"
+    return "/dashboard/productos"
+  }
   const base = `/dashboard/${moduleId}`
   if (suffix === "") return base
   return `${base}/${suffix}`

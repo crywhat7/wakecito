@@ -107,9 +107,71 @@ Compras registradas por empresa.
 - `currency`: text (not null, default `'HNL'`).
 - `created_at`, `updated_at`: timestamptz (not null, default now).
 
+### Tabla: `units_of_measure`
+Unidades de medida (catálogo global, sin `company_id`).
+
+- `id`: uuid (PK).
+- `code`: text (unique, not null) — ej. `PCS`, `KG`.
+- `name`: text (not null).
+- `sort_order`: integer (default 0).
+- `is_active`: boolean (default true).
+- `created_at`, `updated_at`: timestamptz.
+
+### Tabla: `product_categories`
+Categorías de producto por empresa.
+
+- `id`: uuid (PK).
+- `company_id`: uuid (FK → `companies`, cascade).
+- `name`: text (not null).
+- `slug`: text (opcional).
+- `sort_order`, `is_active`, `created_at`, `updated_at`.
+
+### Tabla: `products`
+Artículo de inventario por empresa.
+
+- `id`: uuid (PK).
+- `company_id`: uuid (FK → `companies`, cascade).
+- `sku`, `barcode`: text (opcionales; `sku` único por empresa cuando no es null).
+- `name`: text (not null).
+- `category_id`: uuid (FK → `product_categories`, on delete set null).
+- `unit_id`: uuid (FK → `units_of_measure`, on delete set null).
+- `description`, `internal_notes`: text.
+- `price`: numeric(14,2) (default 0); `cost_price`, `tax_rate` opcionales.
+- `currency`: text (default `HNL`).
+- `stock_quantity`: integer (default 0).
+- `show_in_web_catalog`: boolean (default true).
+- `has_variants`: boolean (default false).
+- `variant_type_label`: text (ej. Color) si hay variantes.
+- `product_condition`: text — `new` | `pre_order` | `post_exhibit` | `used`.
+- `shipping_insurance`: text — `required` | `optional` | `none`.
+- `is_active`: boolean (default true).
+- `created_at`, `updated_at`: timestamptz.
+- Unique: (`company_id`, `sku`).
+
+### Tabla: `product_images`
+Hasta tres URLs de imagen por producto (`sort_order` 1–3).
+
+- `id`: uuid (PK).
+- `product_id`: uuid (FK → `products`, cascade).
+- `url`: text (not null).
+- `sort_order`: integer (not null).
+- `alt_text`: text.
+- `created_at`: timestamptz.
+- Unique: (`product_id`, `sort_order`).
+
+### Tabla: `product_variant_values`
+Valores de variante por producto (nombre libre: Rojo, M, etc.).
+
+- `id`: uuid (PK).
+- `product_id`: uuid (FK → `products`, cascade).
+- `name`: text (not null).
+- `sort_order`: integer (default 0).
+- `created_at`: timestamptz.
+- Unique: (`product_id`, `name`).
+
 ## 3. Reglas de Integridad & Multi-tenant
 - **Multi-tenant manual:** Las consultas de datos por empresa deben filtrar por `company_id` de sesión cuando aplique. `memberships` y `companies` son el núcleo del aislamiento; el usuario autenticado no debe poder elegir `company_id` arbitrario desde el cliente.
-- **Catálogo global:** `plans`, `features` y `plan_features` no llevan `company_id`; el vínculo del tenant al plan es `companies.plan_id`.
+- **Catálogo global:** `plans`, `features`, `plan_features` y `units_of_measure` no llevan `company_id`; el vínculo del tenant al plan es `companies.plan_id`.
 - **FK:** Toda fila en `memberships` exige `user_id` y `company_id` válidos. Toda `companies` exige un `plan_id` válido.
 - **RLS (Row Level Security):** Si se activan políticas en Supabase, deben alinearse con el acceso solo a datos del `company_id` autorizado en sesión.
 - **Nomenclatura:** `snake_case` en columnas; modelos en TypeScript en `PascalCase`.

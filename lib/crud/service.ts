@@ -204,7 +204,9 @@ export async function insertRow(
   if (
     table === "memberships" ||
     table === "clients" ||
-    table === "purchases"
+    table === "purchases" ||
+    table === "product_categories" ||
+    table === "products"
   ) {
     writable.add("company_id");
   }
@@ -212,7 +214,9 @@ export async function insertRow(
   if (
     table === "memberships" ||
     table === "clients" ||
-    table === "purchases"
+    table === "purchases" ||
+    table === "product_categories" ||
+    table === "products"
   ) {
     payload.company_id = session.company.id;
   }
@@ -441,6 +445,29 @@ export async function fetchFkOptions(
        ORDER BY label ASC
        LIMIT 500`,
       [session.company.id],
+    );
+    return rows.map((r) => ({ value: r.id, label: r.label }));
+  }
+
+  if (ref === "product_categories") {
+    const rows = await sql.unsafe<{ id: string; name: string }[]>(
+      `SELECT id::text, name FROM "product_categories"
+       WHERE company_id = $1::uuid AND is_active = true
+       ORDER BY sort_order ASC, name ASC
+       LIMIT 500`,
+      [session.company.id],
+    );
+    return rows.map((r) => ({ value: r.id, label: r.name }));
+  }
+
+  if (ref === "units_of_measure") {
+    const rows = await sql.unsafe<{ id: string; label: string }[]>(
+      `SELECT id::text,
+              TRIM(name) || ' (' || TRIM(code) || ')' AS label
+       FROM "units_of_measure"
+       WHERE is_active = true
+       ORDER BY sort_order ASC, name ASC
+       LIMIT 200`,
     );
     return rows.map((r) => ({ value: r.id, label: r.label }));
   }

@@ -12,6 +12,9 @@ export const CRUD_TABLE_KEYS = [
   "plan_features",
   "clients",
   "purchases",
+  "units_of_measure",
+  "product_categories",
+  "products",
 ] as const;
 
 export type CrudTableKey = (typeof CRUD_TABLE_KEYS)[number];
@@ -79,6 +82,24 @@ export const CRUD_POLICIES: Record<CrudTableKey, CrudTablePolicy> = {
     forbidDelete: false,
   },
   purchases: {
+    scope: { type: "company_id" },
+    excludeColumns: [],
+    readOnlyColumns: ["id", "created_at", "updated_at"],
+    forbidDelete: false,
+  },
+  units_of_measure: {
+    scope: { type: "global" },
+    excludeColumns: [],
+    readOnlyColumns: ["id", "created_at", "updated_at"],
+    forbidDelete: false,
+  },
+  product_categories: {
+    scope: { type: "company_id" },
+    excludeColumns: [],
+    readOnlyColumns: ["id", "created_at", "updated_at"],
+    forbidDelete: false,
+  },
+  products: {
     scope: { type: "company_id" },
     excludeColumns: [],
     readOnlyColumns: ["id", "created_at", "updated_at"],

@@ -181,6 +181,123 @@ export const purchases = pgTable("purchases", {
     .defaultNow(),
 });
 
+/**
+ * Unidades de medida (catálogo global).
+ * Ej. PCS, KG, LB, CAJA.
+ */
+export const unitsOfMeasure = pgTable("units_of_measure", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  code: text("code").notNull().unique(),
+  name: text("name").notNull(),
+  sort_order: integer("sort_order").notNull().default(0),
+  is_active: boolean("is_active").notNull().default(true),
+  created_at: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updated_at: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/** Categorías de producto por empresa. */
+export const productCategories = pgTable("product_categories", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  company_id: uuid("company_id")
+    .notNull()
+    .references(() => companies.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  slug: text("slug"),
+  sort_order: integer("sort_order").notNull().default(0),
+  is_active: boolean("is_active").notNull().default(true),
+  created_at: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updated_at: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/** Producto / artículo de inventario por empresa. */
+export const products = pgTable(
+  "products",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    company_id: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    sku: text("sku"),
+    barcode: text("barcode"),
+    name: text("name").notNull(),
+    category_id: uuid("category_id").references(() => productCategories.id, {
+      onDelete: "set null",
+    }),
+    unit_id: uuid("unit_id").references(() => unitsOfMeasure.id, {
+      onDelete: "set null",
+    }),
+    description: text("description"),
+    price: numeric("price", { precision: 14, scale: 2 }).notNull().default("0"),
+    cost_price: numeric("cost_price", { precision: 14, scale: 2 }),
+    currency: text("currency").notNull().default("HNL"),
+    tax_rate: numeric("tax_rate", { precision: 5, scale: 2 }),
+    stock_quantity: integer("stock_quantity").notNull().default(0),
+    /** Catálogo web / tienda pública. */
+    show_in_web_catalog: boolean("show_in_web_catalog").notNull().default(true),
+    has_variants: boolean("has_variants").notNull().default(false),
+    /** Etiqueta del tipo de variante (ej. Color, Talla). */
+    variant_type_label: text("variant_type_label"),
+    /** new | pre_order | post_exhibit | used */
+    product_condition: text("product_condition").notNull().default("new"),
+    /** required | optional | none */
+    shipping_insurance: text("shipping_insurance").notNull().default("optional"),
+    is_active: boolean("is_active").notNull().default(true),
+    internal_notes: text("internal_notes"),
+    created_at: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updated_at: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [unique("products_company_sku_unique").on(t.company_id, t.sku)],
+);
+
+/** Hasta 3 imágenes por producto (URLs; subida de archivos aparte). */
+export const productImages = pgTable(
+  "product_images",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    product_id: uuid("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    url: text("url").notNull(),
+    sort_order: integer("sort_order").notNull(),
+    alt_text: text("alt_text"),
+    created_at: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [unique("product_images_product_sort_unique").on(t.product_id, t.sort_order)],
+);
+
+/** Valores de variante por producto (ej. Rojo, Azul si el tipo es Color). */
+export const productVariantValues = pgTable(
+  "product_variant_values",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    product_id: uuid("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    sort_order: integer("sort_order").notNull().default(0),
+    created_at: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    unique("product_variant_values_product_name_unique").on(t.product_id, t.name),
+  ],
+);
+
 export type User = InferSelectModel<typeof users>;
 export type NewUser = InferInsertModel<typeof users>;
 
@@ -207,3 +324,20 @@ export type NewClient = InferInsertModel<typeof clients>;
 
 export type Purchase = InferSelectModel<typeof purchases>;
 export type NewPurchase = InferInsertModel<typeof purchases>;
+
+export type UnitOfMeasure = InferSelectModel<typeof unitsOfMeasure>;
+export type NewUnitOfMeasure = InferInsertModel<typeof unitsOfMeasure>;
+
+export type ProductCategory = InferSelectModel<typeof productCategories>;
+export type NewProductCategory = InferInsertModel<typeof productCategories>;
+
+export type Product = InferSelectModel<typeof products>;
+export type NewProduct = InferInsertModel<typeof products>;
+
+export type ProductImage = InferSelectModel<typeof productImages>;
+export type NewProductImage = InferInsertModel<typeof productImages>;
+
+export type ProductVariantValue = InferSelectModel<typeof productVariantValues>;
+export type NewProductVariantValue = InferInsertModel<
+  typeof productVariantValues
+>;

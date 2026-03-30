@@ -24,7 +24,7 @@ export function DashboardShell({
         company={{ name: session.company.name }}
         role={session.role}
       />
-      <div className="p-4 mx-auto max-w-7xl">
+      <div className="p-4 mx-auto max-w-[1360px] w-full">
         {children}
       </div>
     </main>

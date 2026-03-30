@@ -11,6 +11,9 @@ const LABELS: Record<string, string> = {
   plan_features: "Plan ↔ funcionalidad",
   clients: "Clientes",
   purchases: "Compras",
+  units_of_measure: "Unidades de medida",
+  product_categories: "Categorías de producto",
+  products: "Productos",
 };
 
 export async function GET() {
