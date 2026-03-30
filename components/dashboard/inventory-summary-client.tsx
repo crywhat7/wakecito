@@ -65,42 +65,38 @@ function formatMoney(amount: string, currency: string) {
 function StatCard({
   label,
   value,
-  className,
   icon,
   iconShellClassName,
 }: {
   label: string;
   value: string;
-  className?: string;
   icon: React.ReactNode;
   iconShellClassName?: string;
 }) {
   return (
     <Card
       className={cn(
-        "border-border/80 shadow-sm ring-1 ring-foreground/5",
-        className,
+        "shadow-sm",
       )}
+      size="sm"
     >
-      <CardContent className="p-3 sm:p-4">
-        <div className="flex items-start gap-3">
-          <span
-            className={cn(
-              "flex size-10 shrink-0 items-center justify-center rounded-lg shadow-sm",
-              iconShellClassName,
-            )}
-            aria-hidden
-          >
-            {icon}
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">
-              {label}
-            </p>
-            <p className="mt-1 text-lg font-semibold tabular-nums tracking-tight sm:text-xl">
-              {value}
-            </p>
-          </div>
+      <CardContent className="flex items-center gap-3 pt-1">
+        <span
+          className={cn(
+            "flex size-11 shrink-0 items-center justify-center rounded-full",
+            iconShellClassName,
+          )}
+          aria-hidden
+        >
+          {icon}
+        </span>
+        <div className="min-w-0">
+          <p className="text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">
+            {label}
+          </p>
+          <p className="mt-1 text-lg font-semibold tabular-nums tracking-tight sm:text-xl">
+            {value}
+          </p>
         </div>
       </CardContent>
     </Card>
@@ -285,8 +281,7 @@ export function InventorySummaryClient() {
           <StatCard
             label="Productos"
             value={stats.total_products.toLocaleString("es-HN")}
-            className="bg-amber-500/10"
-            iconShellClassName="bg-amber-500/25 ring-1 ring-amber-600/25 dark:bg-amber-500/20 dark:ring-amber-400/30"
+            iconShellClassName="bg-amber-500/15 text-amber-800 dark:text-amber-300"
             icon={
               <IconPackage className="size-5 stroke-[1.5] text-amber-800 dark:text-amber-300" />
             }
@@ -294,8 +289,7 @@ export function InventorySummaryClient() {
           <StatCard
             label="Categorías"
             value={stats.categories_count.toLocaleString("es-HN")}
-            className="bg-pink-500/10"
-            iconShellClassName="bg-pink-500/25 ring-1 ring-pink-600/25 dark:bg-pink-500/20 dark:ring-pink-400/30"
+            iconShellClassName="bg-pink-500/15 text-pink-700 dark:text-pink-200"
             icon={
               <IconCategory className="size-5 stroke-[1.5] text-pink-700 dark:text-pink-300" />
             }
@@ -303,8 +297,7 @@ export function InventorySummaryClient() {
           <StatCard
             label={`Stock bajo (≤${stats.low_stock_threshold})`}
             value={stats.low_stock_count.toLocaleString("es-HN")}
-            className="bg-emerald-500/10"
-            iconShellClassName="bg-emerald-500/25 ring-1 ring-emerald-600/25 dark:bg-emerald-500/20 dark:ring-emerald-400/30"
+            iconShellClassName="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
             icon={
               <IconAlertTriangle className="size-5 stroke-[1.5] text-emerald-800 dark:text-emerald-300" />
             }
@@ -312,8 +305,7 @@ export function InventorySummaryClient() {
           <StatCard
             label="Agotados"
             value={stats.out_of_stock_count.toLocaleString("es-HN")}
-            className="bg-orange-500/10"
-            iconShellClassName="bg-orange-500/25 ring-1 ring-orange-600/25 dark:bg-orange-500/20 dark:ring-orange-400/30"
+            iconShellClassName="bg-orange-500/15 text-orange-700 dark:text-orange-300"
             icon={
               <IconPackageOff className="size-5 stroke-[1.5] text-orange-800 dark:text-orange-300" />
             }
@@ -321,8 +313,7 @@ export function InventorySummaryClient() {
           <StatCard
             label="Valor inventario"
             value={formatMoney(stats.inventory_value, "HNL")}
-            className="bg-sky-500/10"
-            iconShellClassName="bg-sky-500/25 ring-1 ring-sky-600/25 dark:bg-sky-500/20 dark:ring-sky-400/30"
+            iconShellClassName="bg-sky-500/15 text-sky-700 dark:text-sky-300"
             icon={
               <IconCoin className="size-5 stroke-[1.5] text-sky-800 dark:text-sky-300" />
             }
@@ -330,8 +321,7 @@ export function InventorySummaryClient() {
           <StatCard
             label={`Vendido ${stats.year}`}
             value={formatMoney(stats.sold_amount_year, "HNL")}
-            className="bg-green-600/15"
-            iconShellClassName="bg-green-600/25 ring-1 ring-green-700/25 dark:bg-green-600/20 dark:ring-green-400/30"
+            iconShellClassName="bg-green-600/15 text-green-700 dark:text-green-300"
             icon={
               <IconReceipt className="size-5 stroke-[1.5] text-green-800 dark:text-green-300" />
             }

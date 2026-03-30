@@ -27,7 +27,7 @@ const quickActions = [
   {
     label: "Nuevo Gasto",
     icon: IconReceipt,
-    href: "#",
+    href: "/dashboard/gastos/nuevo",
   },
 ] as const
 

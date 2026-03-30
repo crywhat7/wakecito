@@ -1,6 +1,13 @@
-import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, lte, sql } from "drizzle-orm";
 
-import { clients, companies, invoiceLines, invoices, products } from "@/app/db/schema";
+import {
+  clients,
+  companies,
+  expenses,
+  invoiceLines,
+  invoices,
+  products,
+} from "@/app/db/schema";
 import { getDb } from "@/db";
 import { jsonErr, jsonOk } from "@/lib/api/response";
 import {
@@ -12,6 +19,13 @@ import { createInvoiceBodySchema } from "@/lib/validators/invoices";
 
 function moneyToStr(n: number): string {
   return n.toFixed(2);
+}
+
+function parseISODateParam(value: string | null): string | null {
+  if (!value) return null;
+  // Aceptamos YYYY-MM-DD. Si no matchea, ignoramos el filtro.
+  const ok = /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
+  return ok ? value.trim() : null;
 }
 
 /** Lista facturas + agregados para historial / dashboard. */
@@ -27,25 +41,45 @@ export async function GET(request: Request) {
     Math.max(1, Number(searchParams.get("limit") || 50)),
   );
   const offset = Math.max(0, Number(searchParams.get("offset") || 0));
+  const dateFrom = parseISODateParam(searchParams.get("from"));
+  const dateTo = parseISODateParam(searchParams.get("to"));
 
   try {
     const db = getDb();
+
+    const invoiceAggConditions = [
+      eq(invoices.company_id, companyId),
+      isNull(invoices.voided_at),
+    ];
+    if (dateFrom) invoiceAggConditions.push(gte(invoices.sale_date, dateFrom));
+    if (dateTo) invoiceAggConditions.push(lte(invoices.sale_date, dateTo));
+
+    const expenseAggConditions = [eq(expenses.company_id, companyId)];
+    if (dateFrom) expenseAggConditions.push(gte(expenses.expense_date, dateFrom));
+    if (dateTo) expenseAggConditions.push(lte(expenses.expense_date, dateTo));
 
     const [agg] = await db
       .select({
         totalSales: sql<string>`coalesce(sum(${invoices.total_amount}), 0)::text`,
       })
       .from(invoices)
-      .where(
-        and(
-          eq(invoices.company_id, companyId),
-          isNull(invoices.voided_at),
-        ),
-      );
+      .where(and(...invoiceAggConditions));
 
+    // Nota: por el LEFT JOIN anterior, puede haber duplicación si existen múltiples facturas.
+    // Para evitarlo, re-computamos gastos en una query separada (y dejamos esta agregación como "ventas").
     const totalSales = Number.parseFloat(agg?.totalSales ?? "0") || 0;
-    const totalExpenses = 0;
-    const balance = totalSales - totalExpenses;
+
+    const [expAgg] = await db
+      .select({
+        totalExpenses: sql<string>`coalesce(sum(${expenses.total_amount}::numeric), 0)::text`,
+        expensesCount: sql<number>`count(${expenses.id})::int`,
+      })
+      .from(expenses)
+      .where(and(...expenseAggConditions));
+
+    const totalExpenses = Number.parseFloat(expAgg?.totalExpenses ?? "0") || 0;
+    const expensesCount = expAgg?.expensesCount ?? 0;
+    const profit = totalSales - totalExpenses;
 
     const invRows = await db
       .select({
@@ -58,7 +92,15 @@ export async function GET(request: Request) {
         voided_at: invoices.voided_at,
       })
       .from(invoices)
-      .where(eq(invoices.company_id, companyId))
+      .where(
+        and(
+          ...[
+            eq(invoices.company_id, companyId),
+            ...(dateFrom ? [gte(invoices.sale_date, dateFrom)] : []),
+            ...(dateTo ? [lte(invoices.sale_date, dateTo)] : []),
+          ],
+        ),
+      )
       .orderBy(desc(invoices.created_at))
       .limit(limit)
       .offset(offset);
@@ -106,9 +148,10 @@ export async function GET(request: Request) {
 
     return jsonOk({
       stats: {
-        balance,
+        profit,
         totalSales,
         totalExpenses,
+        expensesCount,
       },
       rows,
     });

@@ -10,6 +10,8 @@ import {
 
 import { InvoiceDetailSheet } from "@/components/dashboard/invoice-detail-sheet";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 type InvoiceRow = {
@@ -24,14 +26,16 @@ type InvoiceRow = {
 };
 
 type Stats = {
-  balance: number;
   totalSales: number;
   totalExpenses: number;
+  profit: number;
+  expensesCount: number;
 };
 
-function formatMoney(amount: number, currency: string) {
+function formatMoney(amount: number | undefined | null, currency: string) {
+  const safe = typeof amount === "number" && !Number.isNaN(amount) ? amount : 0;
   const sym = currency === "HNL" || !currency ? "L" : currency;
-  return `${sym} ${amount.toFixed(2)}`;
+  return `${sym} ${safe.toFixed(2)}`;
 }
 
 function formatInvoiceWhen(iso: string): string {
@@ -70,6 +74,8 @@ export function InvoiceHistoryClient() {
   const [rows, setRows] = React.useState<InvoiceRow[]>([]);
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = React.useState(false);
+  const [dateFrom, setDateFrom] = React.useState<string>("");
+  const [dateTo, setDateTo] = React.useState<string>("");
 
   const loadList = React.useCallback(async (opts?: { silent?: boolean }) => {
     const silent = opts?.silent ?? false;
@@ -78,7 +84,12 @@ export function InvoiceHistoryClient() {
       setLoading(true);
     }
     try {
-      const res = await fetch("/api/invoices?limit=80", {
+      const params = new URLSearchParams();
+      params.set("limit", "80");
+      if (dateFrom) params.set("from", dateFrom);
+      if (dateTo) params.set("to", dateTo);
+
+      const res = await fetch(`/api/invoices?${params.toString()}`, {
         credentials: "include",
       });
       const json = (await res.json()) as
@@ -99,7 +110,7 @@ export function InvoiceHistoryClient() {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, []);
+  }, [dateFrom, dateTo]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -134,6 +145,52 @@ export function InvoiceHistoryClient() {
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+        <div className="space-y-2">
+          <Label className="text-xs text-muted-foreground">Filtro de fechas</Label>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1">
+              <Label htmlFor="inv-from" className="text-[0.65rem]">
+                Desde
+              </Label>
+              <Input
+                id="inv-from"
+                type="date"
+                className="h-9 w-40"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                aria-label="Filtrar desde"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="inv-to" className="text-[0.65rem]">
+                Hasta
+              </Label>
+              <Input
+                id="inv-to"
+                type="date"
+                className="h-9 w-40"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                aria-label="Filtrar hasta"
+              />
+            </div>
+          </div>
+        </div>
+        {(dateFrom || dateTo) ? (
+          <button
+            type="button"
+            className="text-sm font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground"
+            onClick={() => {
+              setDateFrom("");
+              setDateTo("");
+            }}
+          >
+            Limpiar fechas
+          </button>
+        ) : null}
+      </div>
+
       {stats ? (
         <div className="grid gap-3 sm:grid-cols-3">
           <Card size="sm" className="shadow-sm">
@@ -143,10 +200,10 @@ export function InvoiceHistoryClient() {
               </span>
               <div className="min-w-0">
                 <p className="text-[0.7rem] font-medium uppercase tracking-wide text-muted-foreground">
-                  Balance
+                  Ganancia total
                 </p>
                 <p className="text-lg font-semibold tabular-nums">
-                  {formatMoney(stats.balance, currency)}
+                  {formatMoney(stats.profit, currency)}
                 </p>
               </div>
             </CardContent>
@@ -177,6 +234,9 @@ export function InvoiceHistoryClient() {
                 </p>
                 <p className="text-lg font-semibold tabular-nums text-muted-foreground">
                   {formatMoney(stats.totalExpenses, currency)}
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {stats.expensesCount} gasto{stats.expensesCount === 1 ? "" : "s"}
                 </p>
               </div>
             </CardContent>

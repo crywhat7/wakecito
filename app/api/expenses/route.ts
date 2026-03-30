@@ -1,4 +1,13 @@
-import { and, count, desc, eq, inArray } from "drizzle-orm";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  or,
+  sql,
+} from "drizzle-orm";
 
 import {
   expenseCategories,
@@ -34,16 +43,55 @@ export async function GET(request: Request) {
   const pageSize = parseIntParam(url.searchParams.get("page_size"), 25, 1, 100);
   const offset = (page - 1) * pageSize;
   const companyId = gate.session.company.id;
+  const q = url.searchParams.get("q")?.trim() ?? "";
+  const categoryIdFilter = url.searchParams.get("category_id")?.trim() || null;
 
   try {
     const db = getDb();
 
-    const [countRow] = await db
-      .select({ n: count() })
+    const [statsAgg] = await db
+      .select({
+        total_count: sql<number>`count(*)::int`,
+        sum_all: sql<string>`coalesce(sum(${expenses.total_amount}::numeric), 0)::text`,
+        sum_cash: sql<string>`coalesce(sum(case when ${expenses.payment_type} = 'cash' then ${expenses.total_amount}::numeric else 0 end), 0)::text`,
+        sum_credit: sql<string>`coalesce(sum(case when ${expenses.payment_type} = 'credit' then ${expenses.total_amount}::numeric else 0 end), 0)::text`,
+        n_cash: sql<number>`count(*) filter (where ${expenses.payment_type} = 'cash')::int`,
+        n_credit: sql<number>`count(*) filter (where ${expenses.payment_type} = 'credit')::int`,
+      })
       .from(expenses)
       .where(eq(expenses.company_id, companyId));
 
-    const total = Number(countRow?.n ?? 0);
+    const listConditions = [eq(expenses.company_id, companyId)];
+
+    if (categoryIdFilter) {
+      listConditions.push(eq(expenses.category_id, categoryIdFilter));
+    }
+
+    if (q.length > 0) {
+      const term = `%${q}%`;
+      const searchCond = or(
+        ilike(expenses.description, term),
+        ilike(expenses.payee_name, term),
+        ilike(expenses.reference, term),
+        ilike(expenseCategories.name, term),
+      );
+      if (searchCond) {
+        listConditions.push(searchCond);
+      }
+    }
+
+    const listWhere = and(...listConditions);
+
+    const [countRow] = await db
+      .select({ n: count() })
+      .from(expenses)
+      .innerJoin(
+        expenseCategories,
+        eq(expenses.category_id, expenseCategories.id),
+      )
+      .where(listWhere);
+
+    const totalFiltered = Number(countRow?.n ?? 0);
 
     const rows = await db
       .select({
@@ -54,6 +102,8 @@ export async function GET(request: Request) {
         payment_type: expenses.payment_type,
         expected_payment_date: expenses.expected_payment_date,
         description: expenses.description,
+        reference: expenses.reference,
+        payee_name: expenses.payee_name,
         category_id: expenses.category_id,
         category_name: expenseCategories.name,
       })
@@ -62,7 +112,7 @@ export async function GET(request: Request) {
         expenseCategories,
         eq(expenses.category_id, expenseCategories.id),
       )
-      .where(eq(expenses.company_id, companyId))
+      .where(listWhere)
       .orderBy(desc(expenses.expense_date), desc(expenses.created_at))
       .limit(pageSize)
       .offset(offset);
@@ -73,8 +123,16 @@ export async function GET(request: Request) {
     }));
 
     return jsonOk({
+      stats: {
+        total_count: statsAgg?.total_count ?? 0,
+        total_amount: statsAgg?.sum_all ?? "0",
+        total_cash: statsAgg?.sum_cash ?? "0",
+        total_credit: statsAgg?.sum_credit ?? "0",
+        count_cash: statsAgg?.n_cash ?? 0,
+        count_credit: statsAgg?.n_credit ?? 0,
+      },
       expenses: list,
-      pagination: { page, page_size: pageSize, total },
+      pagination: { page, page_size: pageSize, total: totalFiltered },
     });
   } catch (e) {
     console.error("[GET /api/expenses]", e);
