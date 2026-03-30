@@ -28,10 +28,10 @@ export default function RootLayout({
       className={cn(poppins.variable, fontMono.variable)}
     >
       <body className={cn(poppins.className, "antialiased")}>
-        <ThemeProvider>
+      {/* <ThemeProvider>
+      </ThemeProvider> */}
           {children}
           <Toaster />
-        </ThemeProvider>
       </body>
     </html>
   )
