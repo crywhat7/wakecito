@@ -70,44 +70,35 @@ function StatCard({
   sub,
   icon,
   iconShellClassName,
-  className,
 }: {
   label: string;
   value: string;
   sub?: string;
   icon: React.ReactNode;
   iconShellClassName?: string;
-  className?: string;
 }) {
   return (
-    <Card
-      className={cn(
-        "border-border/80 shadow-sm ring-1 ring-foreground/5",
-        className,
-      )}
-    >
-      <CardContent className="p-3 sm:p-4">
-        <div className="flex items-start gap-3">
-          <span
-            className={cn(
-              "flex size-10 shrink-0 items-center justify-center rounded-lg shadow-sm",
-              iconShellClassName,
-            )}
-            aria-hidden
-          >
-            {icon}
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">
-              {label}
-            </p>
-            <p className="mt-1 text-lg font-semibold tabular-nums tracking-tight sm:text-xl">
-              {value}
-            </p>
-            {sub ? (
-              <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>
-            ) : null}
-          </div>
+    <Card className="shadow-sm" size="sm">
+      <CardContent className="flex items-center gap-3 pt-1">
+        <span
+          className={cn(
+            "flex size-11 shrink-0 items-center justify-center rounded-full",
+            iconShellClassName,
+          )}
+          aria-hidden
+        >
+          {icon}
+        </span>
+        <div className="min-w-0">
+          <p className="text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">
+            {label}
+          </p>
+          <p className="mt-1 text-lg font-semibold tabular-nums tracking-tight sm:text-xl">
+            {value}
+          </p>
+          {sub ? (
+            <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>
+          ) : null}
         </div>
       </CardContent>
     </Card>
@@ -276,33 +267,29 @@ export function ExpensesListClient() {
             label="Total registrado"
             value={formatMoney(stats.total_amount, "HNL")}
             sub={`${stats.total_count} movimiento${stats.total_count === 1 ? "" : "s"}`}
-            className="bg-slate-500/10"
             icon={<IconReceipt className="size-5 stroke-[1.5] text-slate-800 dark:text-slate-300" />}
-            iconShellClassName="bg-slate-500/25 ring-1 ring-slate-600/25 dark:bg-slate-500/20 dark:ring-slate-400/30"
+            iconShellClassName="bg-slate-500/15 text-slate-700 dark:text-slate-300"
           />
           <StatCard
             label="Contado"
             value={formatMoney(stats.total_cash, "HNL")}
             sub={`${stats.count_cash} gasto${stats.count_cash === 1 ? "" : "s"}`}
-            className="bg-sky-500/10"
             icon={<IconCash className="size-5 stroke-[1.5] text-sky-800 dark:text-sky-300" />}
-            iconShellClassName="bg-sky-500/25 ring-1 ring-sky-600/25 dark:bg-sky-500/20 dark:ring-sky-400/30"
+            iconShellClassName="bg-sky-500/15 text-sky-700 dark:text-sky-300"
           />
           <StatCard
             label="Crédito"
             value={formatMoney(stats.total_credit, "HNL")}
             sub={`${stats.count_credit} gasto${stats.count_credit === 1 ? "" : "s"}`}
-            className="bg-violet-500/10"
             icon={<IconCashBanknote className="size-5 stroke-[1.5] text-violet-800 dark:text-violet-300" />}
-            iconShellClassName="bg-violet-500/25 ring-1 ring-violet-600/25 dark:bg-violet-500/20 dark:ring-violet-400/30"
+            iconShellClassName="bg-violet-500/15 text-violet-700 dark:text-violet-300"
           />
           <StatCard
             label="En la vista"
             value={String(pagination.total)}
             sub="Filas con el criterio actual"
-            className="bg-muted/40"
             icon={<IconSearch className="size-5 stroke-[1.5] text-muted-foreground" />}
-            iconShellClassName="bg-muted/60 ring-1 ring-foreground/10"
+            iconShellClassName="bg-muted/60 text-muted-foreground"
           />
         </div>
       ) : null}
