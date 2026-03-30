@@ -423,7 +423,7 @@ export function ProductCreateClient({ productId }: ProductCreateClientProps = {}
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="barcode">Código de barras (opcional)</Label>
+              <Label htmlFor="barcode">Código de barras</Label>
               <Input
                 id="barcode"
                 value={barcode}
@@ -436,7 +436,9 @@ export function ProductCreateClient({ productId }: ProductCreateClientProps = {}
           <section className="space-y-3">
             <h2 className="text-sm font-semibold">Información</h2>
             <div className="space-y-1.5">
-              <Label htmlFor="pname">Nombre del producto</Label>
+              <Label htmlFor="pname">
+                Nombre del producto <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="pname"
                 required
@@ -500,7 +502,9 @@ export function ProductCreateClient({ productId }: ProductCreateClientProps = {}
             <h2 className="text-sm font-semibold">Gestión</h2>
             <div className="grid gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="price">Precio</Label>
+                <Label htmlFor="price">
+                  Precio <span className="text-destructive">*</span>
+                </Label>
                 <div className="flex gap-2">
                   <Input
                     id="price"
@@ -561,7 +565,7 @@ export function ProductCreateClient({ productId }: ProductCreateClientProps = {}
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="cost">Costo (opcional)</Label>
+                <Label htmlFor="cost">Costo</Label>
                 <Input
                   id="cost"
                   inputMode="decimal"
@@ -570,7 +574,7 @@ export function ProductCreateClient({ productId }: ProductCreateClientProps = {}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="tax">ISV % (opcional)</Label>
+                <Label htmlFor="tax">ISV %</Label>
                 <Input
                   id="tax"
                   inputMode="decimal"
