@@ -18,6 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const CATEGORY_NONE = "__none__";
+const UNIT_NONE = "__unit_none__";
 
 type UnitRow = { id: string; code: string; name: string; sort_order: number };
 type CategoryRow = { id: string; name: string; sort_order: number };
@@ -508,18 +509,22 @@ export function ProductCreateClient({ productId }: ProductCreateClientProps = {}
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
                   />
-                  <select
-                    className={cn(selectClass, "w-24 shrink-0")}
-                    value={currency}
-                    onChange={(e) => setCurrency(e.target.value)}
-                    aria-label="Moneda"
-                  >
-                    {CURRENCIES.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
+                  <Select value={currency} onValueChange={setCurrency}>
+                    <SelectTrigger
+                      className="w-24 shrink-0"
+                      size="sm"
+                      aria-label="Moneda"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CURRENCIES.map((c) => (
+                        <SelectItem key={c} value={c}>
+                          {c}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div className="min-w-0 space-y-1.5">
@@ -534,20 +539,24 @@ export function ProductCreateClient({ productId }: ProductCreateClientProps = {}
               </div>
               <div className="min-w-0 space-y-1.5">
                 <Label htmlFor="unit">Unidad</Label>
-                <select
-                  id="unit"
-                  className={cn(selectClass, "w-full")}
-                  value={unitId}
-                  onChange={(e) => setUnitId(e.target.value)}
-                  aria-label="Unidad"
+                <Select
+                  value={unitId ? unitId : UNIT_NONE}
+                  onValueChange={(v) =>
+                    setUnitId(v === UNIT_NONE ? "" : v)
+                  }
                 >
-                  <option value="">Unidad…</option>
-                  {units.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.name} ({u.code})
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger id="unit" className="w-full" size="sm" aria-label="Unidad">
+                    <SelectValue placeholder="Unidad…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={UNIT_NONE}>Unidad…</SelectItem>
+                    {units.map((u) => (
+                      <SelectItem key={u.id} value={u.id}>
+                        {u.name} ({u.code})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">

@@ -371,6 +371,83 @@ export const invoiceLines = pgTable(
   ],
 );
 
+/** Categorías de gasto por empresa (multi-tenant). */
+export const expenseCategories = pgTable(
+  "expense_categories",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    company_id: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    sort_order: integer("sort_order").notNull().default(0),
+    is_active: boolean("is_active").notNull().default(true),
+    created_at: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updated_at: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+);
+
+/** Gasto operativo: contado o crédito (con fecha de pago estimada obligatoria si es crédito). */
+export const expenses = pgTable(
+  "expenses",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    company_id: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    category_id: uuid("category_id")
+      .notNull()
+      .references(() => expenseCategories.id, { onDelete: "restrict" }),
+    expense_date: date("expense_date").notNull(),
+    total_amount: numeric("total_amount", { precision: 14, scale: 2 })
+      .notNull()
+      .default("0"),
+    currency: text("currency").notNull().default("HNL"),
+    /** cash | credit */
+    payment_type: text("payment_type").notNull(),
+    expected_payment_date: date("expected_payment_date"),
+    description: text("description"),
+    reference: text("reference"),
+    payee_name: text("payee_name"),
+    created_by_user_id: uuid("created_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    created_at: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updated_at: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+);
+
+/** Líneas de gasto con producto: suman unidades al inventario. */
+export const expenseLines = pgTable(
+  "expense_lines",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    expense_id: uuid("expense_id")
+      .notNull()
+      .references(() => expenses.id, { onDelete: "cascade" }),
+    line_number: integer("line_number").notNull(),
+    product_id: uuid("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "restrict" }),
+    quantity: integer("quantity").notNull(),
+    unit_cost: numeric("unit_cost", { precision: 14, scale: 4 }),
+    created_at: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    unique("expense_lines_expense_line_unique").on(t.expense_id, t.line_number),
+  ],
+);
+
 export type User = InferSelectModel<typeof users>;
 export type NewUser = InferInsertModel<typeof users>;
 
@@ -420,3 +497,12 @@ export type NewInvoice = InferInsertModel<typeof invoices>;
 
 export type InvoiceLine = InferSelectModel<typeof invoiceLines>;
 export type NewInvoiceLine = InferInsertModel<typeof invoiceLines>;
+
+export type ExpenseCategory = InferSelectModel<typeof expenseCategories>;
+export type NewExpenseCategory = InferInsertModel<typeof expenseCategories>;
+
+export type Expense = InferSelectModel<typeof expenses>;
+export type NewExpense = InferInsertModel<typeof expenses>;
+
+export type ExpenseLine = InferSelectModel<typeof expenseLines>;
+export type NewExpenseLine = InferInsertModel<typeof expenseLines>;

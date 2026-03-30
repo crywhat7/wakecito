@@ -58,19 +58,22 @@ const modules: HubModule[] = [
       { key: "resumen-inventarios", label: "Resumen de Inventarios", href: "/dashboard/resumen-inventarios" }
     ],
   },
+  {
+    id: "gastos",
+    label: "Gastos",
+    iconSrc: "/dashboard-icons/compras.svg",
+    kind: "menu",
+    options: [
+      { key: "lista-gastos", label: "Gastos", href: "/dashboard/gastos" },
+      { key: "nuevo-gasto", label: "Nuevo Gasto", href: "/dashboard/gastos/nuevo" },
+    ],
+  },
   // {
   //   id: "clientes",
   //   label: "Clientes",
   //   iconSrc: "/dashboard-icons/clientes.svg",
   //   kind: "menu",
   //   options: [{ key: "ver", label: "Ver", href: "/dashboard/clientes" }],
-  // },
-  // {
-  //   id: "compras",
-  //   label: "Compras",
-  //   iconSrc: "/dashboard-icons/compras.svg",
-  //   kind: "menu",
-  //   options: [{ key: "ver", label: "Ver", href: "/dashboard/compras" }],
   // },
   {
     id: "configuracion",

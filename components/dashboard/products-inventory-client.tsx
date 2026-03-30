@@ -6,7 +6,16 @@ import { IconPackage, IconSearch } from "@tabler/icons-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+
+const FILTER_CATEGORY_ALL = "all";
 
 type Category = { id: string; name: string; sort_order: number };
 type Product = {
@@ -117,22 +126,25 @@ export function ProductsInventoryClient() {
           />
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <select
-            className={cn(
-              "h-10 min-w-44 rounded-md border border-input bg-input/20 px-2 text-sm outline-none",
-              "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 dark:bg-input/30",
-            )}
-            value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
-            aria-label="Filtrar por categoría"
-          >
-            <option value="all">Todas las categorías</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          <Select value={categoryId} onValueChange={setCategoryId}>
+            <SelectTrigger
+              className="h-10 min-w-44"
+              size="sm"
+              aria-label="Filtrar por categoría"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={FILTER_CATEGORY_ALL}>
+                Todas las categorías
+              </SelectItem>
+              {categories.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

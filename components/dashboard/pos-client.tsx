@@ -21,8 +21,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+
+const POS_CLIENT_NONE = "__none__";
 
 type PosProduct = {
   id: string;
@@ -640,22 +649,26 @@ export function PosClient() {
 
                 <div className="grid gap-1.5">
                   <Label htmlFor="pos-client">Cliente</Label>
-                  <select
-                    id="pos-client"
-                    className={cn(
-                      "flex h-9 w-full rounded-md border border-input bg-input/20 px-2 text-sm outline-none",
-                      "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 dark:bg-input/30",
-                    )}
-                    value={clientId}
-                    onChange={(e) => setClientId(e.target.value)}
+                  <Select
+                    value={clientId ? clientId : POS_CLIENT_NONE}
+                    onValueChange={(v) =>
+                      setClientId(v === POS_CLIENT_NONE ? "" : v)
+                    }
                   >
-                    <option value="">Consumidor final</option>
-                    {clients.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger id="pos-client" className="w-full" size="sm">
+                      <SelectValue placeholder="Consumidor final" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={POS_CLIENT_NONE}>
+                        Consumidor final
+                      </SelectItem>
+                      {clients.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="grid gap-1.5">

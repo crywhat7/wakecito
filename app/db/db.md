@@ -205,6 +205,43 @@ Detalle de líneas de factura; guarda snapshot de nombre/SKU/precio al momento d
 - `created_at`: timestamptz.
 - Unique: (`invoice_id`, `line_number`).
 
+### Tabla: `expense_categories`
+Categorías de gasto por empresa (ej. Servicios, Alquiler, Compra de mercadería).
+
+- `id`: uuid (PK).
+- `company_id`: uuid (FK → `companies`, cascade).
+- `name`: text (not null).
+- `sort_order`: integer (default 0).
+- `is_active`: boolean (default true).
+- `created_at`, `updated_at`: timestamptz.
+
+### Tabla: `expenses`
+Registro de gasto: puede ser al contado o a crédito; si es crédito, la fecha de pago estimada es obligatoria (CHECK en base).
+
+- `id`: uuid (PK).
+- `company_id`: uuid (FK → `companies`, cascade).
+- `category_id`: uuid (FK → `expense_categories`, restrict al borrar categoría si hay gastos).
+- `expense_date`: date (not null).
+- `total_amount`: numeric(14,2) (not null).
+- `currency`: text (default `HNL`).
+- `payment_type`: text (not null) — `cash` (contado) | `credit` (crédito).
+- `expected_payment_date`: date — obligatoria si `payment_type = credit`; debe ser `NULL` si es contado.
+- `description`, `reference`, `payee_name`: text (opcionales).
+- `created_by_user_id`: uuid (FK → `users`, on delete set null).
+- `created_at`, `updated_at`: timestamptz.
+
+### Tabla: `expense_lines`
+Líneas opcionales que vinculan el gasto a productos: al guardarse, suman `quantity` al `stock_quantity` del producto (entrada de inventario).
+
+- `id`: uuid (PK).
+- `expense_id`: uuid (FK → `expenses`, cascade).
+- `line_number`: integer (not null).
+- `product_id`: uuid (FK → `products`, restrict).
+- `quantity`: integer (not null, > 0) — unidades que ingresan a inventario.
+- `unit_cost`: numeric(14,4) (opcional) — si viene, puede actualizarse el costo del producto en la lógica de aplicación.
+- `created_at`: timestamptz.
+- Unique: (`expense_id`, `line_number`).
+
 ## 3. Reglas de Integridad & Multi-tenant
 - **Multi-tenant manual:** Las consultas de datos por empresa deben filtrar por `company_id` de sesión cuando aplique. `memberships` y `companies` son el núcleo del aislamiento; el usuario autenticado no debe poder elegir `company_id` arbitrario desde el cliente.
 - **Catálogo global:** `plans`, `features`, `plan_features` y `units_of_measure` no llevan `company_id`; el vínculo del tenant al plan es `companies.plan_id`.

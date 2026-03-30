@@ -41,6 +41,7 @@ export async function GET() {
           name: products.name,
           sku: products.sku,
           price: products.price,
+          cost_price: products.cost_price,
           currency: products.currency,
           stock_quantity: products.stock_quantity,
           category_id: products.category_id,
@@ -86,6 +87,10 @@ export async function GET() {
     const catalogProducts = productRows.map((p) => ({
       ...p,
       price: String(p.price),
+      cost_price:
+        p.cost_price != null && String(p.cost_price).trim() !== ""
+          ? String(p.cost_price)
+          : null,
       image_url: imageByProduct.get(p.id) ?? null,
     }));
 
