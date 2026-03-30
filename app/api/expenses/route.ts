@@ -3,8 +3,10 @@ import {
   count,
   desc,
   eq,
+  gte,
   ilike,
   inArray,
+  lte,
   or,
   sql,
 } from "drizzle-orm";
@@ -32,6 +34,12 @@ function parseIntParam(
   return Math.min(max, Math.max(min, n));
 }
 
+function parseISODateParam(value: string | null): string | null {
+  if (!value) return null;
+  const ok = /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
+  return ok ? value.trim() : null;
+}
+
 export async function GET(request: Request) {
   const gate = await requireSession();
   if (gate.error) {
@@ -45,9 +53,15 @@ export async function GET(request: Request) {
   const companyId = gate.session.company.id;
   const q = url.searchParams.get("q")?.trim() ?? "";
   const categoryIdFilter = url.searchParams.get("category_id")?.trim() || null;
+  const dateFrom = parseISODateParam(url.searchParams.get("from"));
+  const dateTo = parseISODateParam(url.searchParams.get("to"));
 
   try {
     const db = getDb();
+
+    const statsConditions = [eq(expenses.company_id, companyId)];
+    if (dateFrom) statsConditions.push(gte(expenses.expense_date, dateFrom));
+    if (dateTo) statsConditions.push(lte(expenses.expense_date, dateTo));
 
     const [statsAgg] = await db
       .select({
@@ -59,9 +73,11 @@ export async function GET(request: Request) {
         n_credit: sql<number>`count(*) filter (where ${expenses.payment_type} = 'credit')::int`,
       })
       .from(expenses)
-      .where(eq(expenses.company_id, companyId));
+      .where(and(...statsConditions));
 
     const listConditions = [eq(expenses.company_id, companyId)];
+    if (dateFrom) listConditions.push(gte(expenses.expense_date, dateFrom));
+    if (dateTo) listConditions.push(lte(expenses.expense_date, dateTo));
 
     if (categoryIdFilter) {
       listConditions.push(eq(expenses.category_id, categoryIdFilter));

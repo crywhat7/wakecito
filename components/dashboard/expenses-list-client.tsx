@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   IconCash,
   IconCashBanknote,
@@ -106,6 +107,7 @@ function StatCard({
 }
 
 export function ExpensesListClient() {
+  const searchParams = useSearchParams();
   const [initialLoading, setInitialLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
   const [err, setErr] = React.useState<string | null>(null);
@@ -123,6 +125,12 @@ export function ExpensesListClient() {
   const [search, setSearch] = React.useState("");
   const [searchDebounced, setSearchDebounced] = React.useState("");
   const [categoryId, setCategoryId] = React.useState<string>(FILTER_CATEGORY_ALL);
+  const [dateFrom, setDateFrom] = React.useState<string>(
+    searchParams.get("from") ?? "",
+  );
+  const [dateTo, setDateTo] = React.useState<string>(
+    searchParams.get("to") ?? "",
+  );
 
   React.useEffect(() => {
     let cancelled = false;
@@ -153,7 +161,7 @@ export function ExpensesListClient() {
 
   React.useLayoutEffect(() => {
     setPagination((p) => (p.page === 1 ? p : { ...p, page: 1 }));
-  }, [searchDebounced, categoryId]);
+  }, [searchDebounced, categoryId, dateFrom, dateTo]);
 
   const load = React.useCallback(async () => {
     setErr(null);
@@ -166,6 +174,8 @@ export function ExpensesListClient() {
       if (categoryId !== FILTER_CATEGORY_ALL) {
         params.set("category_id", categoryId);
       }
+      if (dateFrom) params.set("from", dateFrom);
+      if (dateTo) params.set("to", dateTo);
 
       const expRes = await fetch(`/api/expenses?${params.toString()}`, {
         credentials: "include",
@@ -198,7 +208,7 @@ export function ExpensesListClient() {
       setInitialLoading(false);
       setRefreshing(false);
     }
-  }, [page, pageSize, searchDebounced, categoryId]);
+  }, [page, pageSize, searchDebounced, categoryId, dateFrom, dateTo]);
 
   React.useEffect(() => {
     void load();
@@ -225,18 +235,60 @@ export function ExpensesListClient() {
       className={cn("space-y-6", refreshing && "opacity-70 transition-opacity")}
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-        <div className="relative min-w-0 flex-1 sm:max-w-md">
-          <IconSearch
-            className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-            stroke={1.5}
-          />
-          <Input
-            className="h-9 rounded-md border-border/80 bg-background pl-9 pr-3"
-            placeholder="Buscar por categoría, descripción, proveedor…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            aria-label="Buscar gastos"
-          />
+        <div className="flex min-w-0 flex-1 flex-col gap-3 sm:max-w-xl">
+          <div className="relative min-w-0">
+            <IconSearch
+              className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+              stroke={1.5}
+            />
+            <Input
+              className="h-9 rounded-md border-border/80 bg-background pl-9 pr-3"
+              placeholder="Buscar por categoría, descripción, proveedor…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label="Buscar gastos"
+            />
+          </div>
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="space-y-1">
+              <label htmlFor="exp-from" className="text-[0.65rem] text-muted-foreground">
+                Desde
+              </label>
+              <Input
+                id="exp-from"
+                type="date"
+                className="h-9 w-40"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <label htmlFor="exp-to" className="text-[0.65rem] text-muted-foreground">
+                Hasta
+              </label>
+              <Input
+                id="exp-to"
+                type="date"
+                className="h-9 w-40"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+              />
+            </div>
+            {dateFrom || dateTo ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-9"
+                onClick={() => {
+                  setDateFrom("");
+                  setDateTo("");
+                }}
+              >
+                Limpiar
+              </Button>
+            ) : null}
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Select value={categoryId} onValueChange={setCategoryId}>
