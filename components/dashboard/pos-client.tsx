@@ -16,22 +16,23 @@ import {
   IconPlus,
   IconSearch,
   IconTrash,
+  IconUserPlus,
 } from "@tabler/icons-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { InvoiceDetailSheet } from "@/components/dashboard/invoice-detail-sheet";
 import { cn } from "@/lib/utils";
-
-const POS_CLIENT_NONE = "__none__";
 
 type PosProduct = {
   id: string;
@@ -45,7 +46,7 @@ type PosProduct = {
 };
 
 type PosCategory = { id: string; name: string; sort_order: number };
-type PosClient = { id: string; name: string };
+type PosClient = { id: string; name: string; rtn: string | null };
 
 type CartLine = {
   product: PosProduct;
@@ -91,6 +92,12 @@ function parseDiscountAmount(raw: string, subtotal: number): number {
   return Math.min(n, sub);
 }
 
+function parseTaxRatePercent(raw: string): number {
+  const n = Number.parseFloat(raw.trim().replace(",", "."));
+  if (Number.isNaN(n) || n < 0) return 0;
+  return n;
+}
+
 const PAYMENT_METHODS = [
   {
     id: "cash" as const,
@@ -132,12 +139,20 @@ export function PosClient() {
   const [status, setStatus] = React.useState<"paid" | "credit">("paid");
   const [clientId, setClientId] = React.useState("");
   const [discountStr, setDiscountStr] = React.useState("0");
+  const [taxRateStr, setTaxRateStr] = React.useState("15");
   const [paymentMethod, setPaymentMethod] = React.useState<
     "cash" | "card" | "transfer" | "other"
   >("cash");
   const [creditDueDate, setCreditDueDate] = React.useState("");
   const [saving, setSaving] = React.useState(false);
   const [submitErr, setSubmitErr] = React.useState<string | null>(null);
+  const [clientDialogOpen, setClientDialogOpen] = React.useState(false);
+  const [clientQuery, setClientQuery] = React.useState("");
+  const [newClientName, setNewClientName] = React.useState("");
+  const [newClientRtn, setNewClientRtn] = React.useState("");
+  const [creatingClient, setCreatingClient] = React.useState(false);
+  const [createdInvoiceId, setCreatedInvoiceId] = React.useState<string | null>(null);
+  const [invoiceSheetOpen, setInvoiceSheetOpen] = React.useState(false);
 
   const loadBootstrap = React.useCallback(async (opts?: { silent?: boolean }) => {
     const silent = opts?.silent ?? false;
@@ -198,13 +213,29 @@ export function PosClient() {
   }, [products, search, categoryId]);
 
   const cartLines = React.useMemo(() => [...cart.values()], [cart]);
+  const selectedClient = React.useMemo(
+    () => clients.find((c) => c.id === clientId) ?? null,
+    [clients, clientId],
+  );
+  const filteredClients = React.useMemo(() => {
+    const q = clientQuery.trim().toLowerCase();
+    if (!q) return clients;
+    return clients.filter((c) => {
+      const name = c.name.toLowerCase();
+      const rtn = (c.rtn ?? "").toLowerCase();
+      return name.includes(q) || rtn.includes(q);
+    });
+  }, [clients, clientQuery]);
   const totalItems = cartLines.reduce((s, l) => s + l.quantity, 0);
   const subtotal = cartLines.reduce(
     (s, l) => s + Number.parseFloat(l.product.price) * l.quantity,
     0,
   );
   const discount = parseDiscountAmount(discountStr, subtotal);
-  const total = Math.max(0, Math.round((subtotal - discount) * 100) / 100);
+  const taxRatePercent = parseTaxRatePercent(taxRateStr);
+  const taxableBase = Math.max(0, Math.round((subtotal - discount) * 100) / 100);
+  const taxAmount = Math.round((taxableBase * taxRatePercent) / 100 * 100) / 100;
+  const total = Math.max(0, Math.round((taxableBase + taxAmount) * 100) / 100);
 
   function addProduct(p: PosProduct) {
     if (p.stock_quantity <= 0) return;
@@ -252,7 +283,9 @@ export function PosClient() {
     clearCart();
     setSidePanel("cart");
     setDiscountStr("0");
+    setTaxRateStr("15");
     setClientId("");
+    setClientQuery("");
     setSaleDate(todayISODate());
     setStatus("paid");
     setPaymentMethod("cash");
@@ -274,6 +307,7 @@ export function PosClient() {
         status,
         client_id: clientId || null,
         discount_amount: discountAmount.toFixed(2),
+        tax_rate_percent: taxRatePercent.toFixed(2),
         payment_method: status === "paid" ? paymentMethod : null,
         credit_due_date:
           status === "credit" && creditDueDate ? creditDueDate : null,
@@ -300,6 +334,8 @@ export function PosClient() {
         throw new Error(!json.success ? json.error : "Error");
       }
       nuevaVentaLibre();
+      setCreatedInvoiceId(json.data.invoice.id);
+      setInvoiceSheetOpen(true);
       void loadBootstrap({ silent: true });
       router.refresh();
       toast.success(
@@ -309,6 +345,42 @@ export function PosClient() {
       setSubmitErr(e instanceof Error ? e.message : "Error al guardar");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function createClientQuick() {
+    if (!newClientName.trim()) return;
+    setCreatingClient(true);
+    try {
+      const res = await fetch("/api/clients", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newClientName.trim(),
+          rtn: newClientRtn.trim() || null,
+        }),
+      });
+      const json = (await res.json()) as
+        | { success: true; data: { client: PosClient } }
+        | { success: false; error: string };
+      if (!res.ok || !json.success) {
+        throw new Error(!json.success ? json.error : "Error");
+      }
+      const created = json.data.client;
+      setClients((prev) =>
+        [...prev, created].sort((a, b) => a.name.localeCompare(b.name, "es")),
+      );
+      setClientId(created.id);
+      setClientDialogOpen(false);
+      setClientQuery("");
+      setNewClientName("");
+      setNewClientRtn("");
+      toast.success("Cliente creado");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Error al crear cliente");
+    } finally {
+      setCreatingClient(false);
     }
   }
 
@@ -648,27 +720,43 @@ export function PosClient() {
                 </div>
 
                 <div className="grid gap-1.5">
-                  <Label htmlFor="pos-client">Cliente</Label>
-                  <Select
-                    value={clientId ? clientId : POS_CLIENT_NONE}
-                    onValueChange={(v) =>
-                      setClientId(v === POS_CLIENT_NONE ? "" : v)
-                    }
-                  >
-                    <SelectTrigger id="pos-client" className="w-full" size="sm">
-                      <SelectValue placeholder="Consumidor final" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={POS_CLIENT_NONE}>
-                        Consumidor final
-                      </SelectItem>
-                      {clients.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label>Cliente</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant={clientId ? "outline" : "default"}
+                      className={cn(
+                        "h-9 justify-center",
+                        !clientId &&
+                          "bg-emerald-600 text-white hover:bg-emerald-600/90",
+                      )}
+                      onClick={() => setClientId("")}
+                    >
+                      Consumidor final
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-9 justify-center gap-1.5"
+                      onClick={() => {
+                        setClientDialogOpen(true);
+                        setClientQuery("");
+                      }}
+                    >
+                      <IconSearch className="size-4" stroke={1.5} />
+                      Seleccionar cliente
+                    </Button>
+                  </div>
+
+                  {selectedClient ? (
+                    <div className="rounded-md border bg-muted/20 px-2.5 py-2 text-xs">
+                      <span className="text-muted-foreground">Seleccionado: </span>
+                      <span className="font-medium">
+                        {selectedClient.name}
+                        {selectedClient.rtn ? ` · RTN ${selectedClient.rtn}` : ""}
+                      </span>
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="grid gap-1.5">
@@ -690,6 +778,25 @@ export function PosClient() {
                     Podés escribir un monto o un porcentaje del subtotal (ej.{" "}
                     <span className="tabular-nums">10%</span>); al salir del
                     campo se convierte al valor en lempiras.
+                  </p>
+                </div>
+
+                <div className="grid gap-1.5">
+                  <Label htmlFor="tax-rate">Impuesto (%)</Label>
+                  <Input
+                    id="tax-rate"
+                    inputMode="decimal"
+                    value={taxRateStr}
+                    onChange={(e) => setTaxRateStr(e.target.value)}
+                    onBlur={() => {
+                      const pct = parseTaxRatePercent(taxRateStr);
+                      setTaxRateStr(pct.toFixed(2));
+                    }}
+                    placeholder="15"
+                  />
+                  <p className="text-[0.7rem] text-muted-foreground">
+                    Podés usar <span className="tabular-nums">0</span> o cualquier
+                    porcentaje de impuesto.
                   </p>
                 </div>
 
@@ -758,6 +865,24 @@ export function PosClient() {
                     )}
                   </span>
                 </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Descuento</span>
+                  <span className="tabular-nums">
+                    {formatMoney(
+                      discount,
+                      cartLines[0]?.product.currency ?? "HNL",
+                    )}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Impuesto ({taxRatePercent.toFixed(2)}%)</span>
+                  <span className="tabular-nums">
+                    {formatMoney(
+                      taxAmount,
+                      cartLines[0]?.product.currency ?? "HNL",
+                    )}
+                  </span>
+                </div>
                 <div className="flex items-center justify-between text-sm font-semibold">
                   <span>Total</span>
                   <span className="tabular-nums">
@@ -793,6 +918,135 @@ export function PosClient() {
           </>
         )}
       </aside>
+      <InvoiceDetailSheet
+        invoiceId={createdInvoiceId}
+        open={invoiceSheetOpen}
+        onOpenChange={(open) => {
+          setInvoiceSheetOpen(open);
+          if (!open) {
+            setCreatedInvoiceId(null);
+          }
+        }}
+        onInvoiceChanged={() => {
+          router.refresh();
+        }}
+      />
+      <Dialog
+        open={clientDialogOpen}
+        onOpenChange={(open) => {
+          setClientDialogOpen(open);
+          if (!open) {
+            setClientQuery("");
+            setNewClientName("");
+            setNewClientRtn("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Seleccionar cliente</DialogTitle>
+            <DialogDescription>
+              Buscá por nombre o RTN, o creá uno rápido sin salir del POS.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid gap-1.5">
+              <Label htmlFor="client-search">Buscar</Label>
+              <Input
+                id="client-search"
+                placeholder="Ej. Juan Pérez o 080119..."
+                value={clientQuery}
+                onChange={(e) => setClientQuery(e.target.value)}
+              />
+            </div>
+
+            <div className="rounded-md border">
+              <div className="max-h-64 overflow-y-auto">
+                {filteredClients.length === 0 ? (
+                  <p className="px-3 py-2 text-xs text-muted-foreground">
+                    No hay clientes que coincidan.
+                  </p>
+                ) : (
+                  <ul className="divide-y">
+                    {filteredClients.map((c) => (
+                      <li key={c.id}>
+                        <button
+                          type="button"
+                          className={cn(
+                            "w-full px-3 py-2 text-left text-xs hover:bg-muted/40",
+                            clientId === c.id && "bg-emerald-500/10",
+                          )}
+                          onClick={() => {
+                            setClientId(c.id);
+                            setClientDialogOpen(false);
+                          }}
+                        >
+                          <span className="block font-medium">{c.name}</span>
+                          {c.rtn ? (
+                            <span className="block text-muted-foreground">
+                              RTN: {c.rtn}
+                            </span>
+                          ) : null}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-border/80 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium">Crear cliente rápido</p>
+                <IconUserPlus className="size-4 text-muted-foreground" stroke={1.5} />
+              </div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-1.5 sm:col-span-2">
+                  <Label htmlFor="quick-client-name">
+                    Nombre <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="quick-client-name"
+                    value={newClientName}
+                    onChange={(e) => setNewClientName(e.target.value)}
+                    placeholder="Nombre del cliente"
+                  />
+                </div>
+                <div className="grid gap-1.5 sm:col-span-2">
+                  <Label htmlFor="quick-client-rtn">RTN</Label>
+                  <Input
+                    id="quick-client-rtn"
+                    value={newClientRtn}
+                    onChange={(e) => setNewClientRtn(e.target.value)}
+                    placeholder="Opcional"
+                  />
+                </div>
+              </div>
+              <DialogFooter className="mt-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setNewClientName("");
+                    setNewClientRtn("");
+                  }}
+                >
+                  Limpiar
+                </Button>
+                <Button
+                  type="button"
+                  className="bg-wakecito-mint text-wakecito-charcoal hover:bg-wakecito-mint/85"
+                  onClick={() => void createClientQuick()}
+                  disabled={creatingClient || !newClientName.trim()}
+                >
+                  {creatingClient ? "Creando..." : "Crear y seleccionar"}
+                </Button>
+              </DialogFooter>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -55,6 +55,7 @@ export async function GET() {
         .select({
           id: clients.id,
           name: clients.name,
+          rtn: clients.rtn,
         })
         .from(clients)
         .where(

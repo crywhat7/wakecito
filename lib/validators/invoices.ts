@@ -10,6 +10,11 @@ export const createInvoiceBodySchema = z
       .transform((v) => (typeof v === "number" ? String(v) : v))
       .optional()
       .default("0"),
+    tax_rate_percent: z
+      .union([z.string(), z.number()])
+      .transform((v) => (typeof v === "number" ? String(v) : v))
+      .optional()
+      .default("15"),
     payment_method: z.enum(["cash", "card", "transfer", "other"]).nullable().optional(),
     /** Solo ventas a crédito: fecha tentativa de cobro. */
     credit_due_date: z
@@ -58,6 +63,14 @@ export const createInvoiceBodySchema = z
         code: "custom",
         message: "Descuento inválido",
         path: ["discount_amount"],
+      });
+    }
+    const taxRate = Number.parseFloat(data.tax_rate_percent || "0");
+    if (Number.isNaN(taxRate) || taxRate < 0) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Porcentaje de impuesto inválido",
+        path: ["tax_rate_percent"],
       });
     }
   });

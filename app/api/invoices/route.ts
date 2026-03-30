@@ -188,6 +188,10 @@ export async function POST(request: Request) {
   if (Number.isNaN(discount) || discount < 0) {
     return jsonErr("Descuento inválido", 400);
   }
+  const taxRatePercent = Number.parseFloat(d.tax_rate_percent || "15");
+  if (Number.isNaN(taxRatePercent) || taxRatePercent < 0) {
+    return jsonErr("Porcentaje de impuesto inválido", 400);
+  }
 
   try {
     const db = getDb();
@@ -282,7 +286,9 @@ export async function POST(request: Request) {
       return jsonErr("El descuento no puede superar el subtotal", 400);
     }
 
-    const total = Math.round((subtotalRounded - discount) * 100) / 100;
+    const taxableBase = Math.max(0, Math.round((subtotalRounded - discount) * 100) / 100);
+    const taxAmount = Math.round((taxableBase * taxRatePercent) / 100 * 100) / 100;
+    const total = Math.round((taxableBase + taxAmount) * 100) / 100;
     if (total < 0) {
       return jsonErr("Total inválido", 400);
     }
@@ -330,7 +336,7 @@ export async function POST(request: Request) {
           currency,
           subtotal_amount: moneyToStr(subtotalRounded),
           discount_amount: moneyToStr(discount),
-          tax_amount: "0",
+          tax_amount: moneyToStr(taxAmount),
           total_amount: moneyToStr(total),
           payment_method: d.status === "paid" ? d.payment_method! : null,
           installments: null,
