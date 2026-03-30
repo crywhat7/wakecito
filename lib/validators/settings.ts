@@ -14,6 +14,8 @@ export const companySettingsPatchSchema = z.object({
   range_start: z.string().trim().max(100),
   range_end: z.string().trim().max(100),
   expiration_date: dateStr,
+  /** Siguiente correlativo a emitir (1…99999999). */
+  invoice_next_number: z.coerce.number().int().min(1).max(99_999_999).optional(),
 });
 
 export type CompanySettingsPatchInput = z.infer<

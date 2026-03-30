@@ -65,6 +65,8 @@ export const companies = pgTable("companies", {
   range_start: text("range_start"),
   range_end: text("range_end"),
   expiration_date: date("expiration_date"),
+  /** Siguiente correlativo a usar en la factura legal (1…99999999). */
+  invoice_next_number: integer("invoice_next_number").notNull().default(1),
   created_at: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -339,6 +341,8 @@ export const invoices = pgTable("invoices", {
   updated_at: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
+  /** Si está definida, la venta fue anulada (no cuenta en totales). */
+  voided_at: timestamp("voided_at", { withTimezone: true }),
 });
 
 /** Líneas de detalle de factura (snapshot de producto al momento de la venta). */

@@ -61,6 +61,7 @@ Empresas (tenant). Al registrarse solo, se crea una empresa con el nombre indica
 - `range_start`: text.
 - `range_end`: text.
 - `expiration_date`: date.
+- `invoice_next_number`: integer (not null, default 1) — siguiente correlativo para el número de factura legal.
 - `created_at`: timestamptz (not null, default now).
 - `updated_at`: timestamptz (not null, default now).
 
@@ -186,6 +187,7 @@ Factura / venta POS por empresa.
 - `notes`: text.
 - `created_by_user_id`: uuid (FK → `users`, on delete set null).
 - `created_at`, `updated_at`: timestamptz.
+- `voided_at`: timestamptz (opcional) — si existe, la factura está anulada (no suma en totales; se puede revertir stock).
 - Índice sugerido: (`company_id`, `sale_date` DESC).
 
 ### Tabla: `invoice_lines`

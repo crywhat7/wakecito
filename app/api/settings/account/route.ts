@@ -24,6 +24,7 @@ export async function GET() {
         range_start: companies.range_start,
         range_end: companies.range_end,
         expiration_date: companies.expiration_date,
+        invoice_next_number: companies.invoice_next_number,
       })
       .from(companies)
       .where(eq(companies.id, session.company.id))

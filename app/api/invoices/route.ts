@@ -1,13 +1,121 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 
-import { clients, invoiceLines, invoices, products } from "@/app/db/schema";
+import { clients, companies, invoiceLines, invoices, products } from "@/app/db/schema";
 import { getDb } from "@/db";
 import { jsonErr, jsonOk } from "@/lib/api/response";
+import {
+  buildLegalInvoiceNumber,
+  validateRangeStartForInvoice,
+} from "@/lib/invoice-legal-number";
 import { requireSession } from "@/lib/auth/require-session";
 import { createInvoiceBodySchema } from "@/lib/validators/invoices";
 
 function moneyToStr(n: number): string {
   return n.toFixed(2);
+}
+
+/** Lista facturas + agregados para historial / dashboard. */
+export async function GET(request: Request) {
+  const gate = await requireSession();
+  if (gate.error) {
+    return gate.error;
+  }
+  const companyId = gate.session.company.id;
+  const { searchParams } = new URL(request.url);
+  const limit = Math.min(
+    100,
+    Math.max(1, Number(searchParams.get("limit") || 50)),
+  );
+  const offset = Math.max(0, Number(searchParams.get("offset") || 0));
+
+  try {
+    const db = getDb();
+
+    const [agg] = await db
+      .select({
+        totalSales: sql<string>`coalesce(sum(${invoices.total_amount}), 0)::text`,
+      })
+      .from(invoices)
+      .where(
+        and(
+          eq(invoices.company_id, companyId),
+          isNull(invoices.voided_at),
+        ),
+      );
+
+    const totalSales = Number.parseFloat(agg?.totalSales ?? "0") || 0;
+    const totalExpenses = 0;
+    const balance = totalSales - totalExpenses;
+
+    const invRows = await db
+      .select({
+        id: invoices.id,
+        total_amount: invoices.total_amount,
+        currency: invoices.currency,
+        status: invoices.status,
+        payment_method: invoices.payment_method,
+        created_at: invoices.created_at,
+        voided_at: invoices.voided_at,
+      })
+      .from(invoices)
+      .where(eq(invoices.company_id, companyId))
+      .orderBy(desc(invoices.created_at))
+      .limit(limit)
+      .offset(offset);
+
+    const ids = invRows.map((r) => r.id);
+    const conceptById = new Map<string, string>();
+
+    if (ids.length > 0) {
+      const lines = await db
+        .select({
+          invoice_id: invoiceLines.invoice_id,
+          product_name: invoiceLines.product_name,
+          quantity: invoiceLines.quantity,
+        })
+        .from(invoiceLines)
+        .where(inArray(invoiceLines.invoice_id, ids))
+        .orderBy(asc(invoiceLines.invoice_id), asc(invoiceLines.line_number));
+
+      for (const line of lines) {
+        const q = Number.parseFloat(String(line.quantity));
+        const qtyStr = Number.isNaN(q)
+          ? String(line.quantity)
+          : Number.isInteger(q)
+            ? String(q)
+            : String(q);
+        const part = `${qtyStr} ${line.product_name}`;
+        const prev = conceptById.get(line.invoice_id) ?? "";
+        conceptById.set(
+          line.invoice_id,
+          prev ? `${prev}, ${part}` : part,
+        );
+      }
+    }
+
+    const rows = invRows.map((inv) => ({
+      id: inv.id,
+      concept: conceptById.get(inv.id) ?? "—",
+      total_amount: String(inv.total_amount),
+      currency: inv.currency,
+      status: inv.status,
+      payment_method: inv.payment_method,
+      created_at: inv.created_at.toISOString(),
+      voided_at: inv.voided_at ? inv.voided_at.toISOString() : null,
+    }));
+
+    return jsonOk({
+      stats: {
+        balance,
+        totalSales,
+        totalExpenses,
+      },
+      rows,
+    });
+  } catch (e) {
+    console.error("[GET /api/invoices]", e);
+    return jsonErr("Error al cargar facturas", 500);
+  }
 }
 
 export async function POST(request: Request) {
@@ -142,6 +250,33 @@ export async function POST(request: Request) {
         : "HNL";
 
     const result = await db.transaction(async (tx) => {
+      const [co] = await tx
+        .select({
+          range_start: companies.range_start,
+          invoice_next_number: companies.invoice_next_number,
+        })
+        .from(companies)
+        .where(eq(companies.id, companyId))
+        .for("update")
+        .limit(1);
+
+      if (!co) {
+        throw new Error("NO_COMPANY");
+      }
+      if (!validateRangeStartForInvoice(co.range_start)) {
+        throw new Error("NO_RANGE_START");
+      }
+
+      let legalNumber: string;
+      try {
+        legalNumber = buildLegalInvoiceNumber(
+          co.range_start,
+          co.invoice_next_number,
+        );
+      } catch {
+        throw new Error("BAD_SEQUENCE");
+      }
+
       const [inv] = await tx
         .insert(invoices)
         .values({
@@ -160,13 +295,22 @@ export async function POST(request: Request) {
             d.status === "credit" && d.credit_due_date
               ? d.credit_due_date
               : null,
+          invoice_number: legalNumber,
           created_by_user_id: userId,
         })
-        .returning({ id: invoices.id });
+        .returning({ id: invoices.id, invoice_number: invoices.invoice_number });
 
       if (!inv) {
         throw new Error("insert invoice");
       }
+
+      await tx
+        .update(companies)
+        .set({
+          invoice_next_number: co.invoice_next_number + 1,
+          updated_at: new Date(),
+        })
+        .where(eq(companies.id, companyId));
 
       let lineNum = 1;
       for (const row of lineData) {
@@ -196,13 +340,27 @@ export async function POST(request: Request) {
 
     return jsonOk(
       {
-        invoice: { id: result.id, total_amount: moneyToStr(total), currency },
+        invoice: {
+          id: result.id,
+          invoice_number: result.invoice_number,
+          total_amount: moneyToStr(total),
+          currency,
+        },
       },
       201,
     );
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "";
     console.error("[POST /api/invoices]", e);
+    if (msg === "NO_RANGE_START") {
+      return jsonErr(
+        "Configurá el «Rango autorizado — desde» en Configuración de la empresa para emitir facturas legales.",
+        400,
+      );
+    }
+    if (msg === "BAD_SEQUENCE" || msg === "INVALID_SEQUENCE") {
+      return jsonErr("Correlativo de factura inválido. Revisá la configuración.", 400);
+    }
     if (msg.includes("Stock") || msg.includes("insuficiente")) {
       return jsonErr(msg || "Stock insuficiente", 400);
     }

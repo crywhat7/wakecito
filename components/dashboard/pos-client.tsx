@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as React from "react";
+import { toast } from "sonner";
 import {
   IconArrowLeft,
   IconBarcode,
@@ -130,42 +131,52 @@ export function PosClient() {
   const [saving, setSaving] = React.useState(false);
   const [submitErr, setSubmitErr] = React.useState<string | null>(null);
 
+  const loadBootstrap = React.useCallback(async (opts?: { silent?: boolean }) => {
+    const silent = opts?.silent ?? false;
+    if (!silent) {
+      setLoadErr(null);
+    }
+    try {
+      const res = await fetch("/api/pos/bootstrap", { credentials: "include" });
+      const json = (await res.json()) as
+        | {
+            success: true;
+            data: {
+              categories: PosCategory[];
+              products: PosProduct[];
+              clients: PosClient[];
+            };
+          }
+        | { success: false; error: string };
+      if (!res.ok || !json.success) {
+        throw new Error(!json.success ? json.error : "Error");
+      }
+      setCategories(json.data.categories);
+      setProducts(json.data.products);
+      setClients(json.data.clients);
+    } catch (e) {
+      if (!silent) {
+        setLoadErr(e instanceof Error ? e.message : "Error al cargar");
+      }
+    } finally {
+      if (!silent) {
+        setLoading(false);
+      }
+    }
+  }, []);
+
   React.useEffect(() => {
     let cancelled = false;
-    (async () => {
-      setLoadErr(null);
-      try {
-        const res = await fetch("/api/pos/bootstrap", { credentials: "include" });
-        const json = (await res.json()) as
-          | {
-              success: true;
-              data: {
-                categories: PosCategory[];
-                products: PosProduct[];
-                clients: PosClient[];
-              };
-            }
-          | { success: false; error: string };
-        if (!res.ok || !json.success) {
-          throw new Error(!json.success ? json.error : "Error");
-        }
-        if (!cancelled) {
-          setCategories(json.data.categories);
-          setProducts(json.data.products);
-          setClients(json.data.clients);
-        }
-      } catch (e) {
-        if (!cancelled) {
-          setLoadErr(e instanceof Error ? e.message : "Error al cargar");
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
+    void (async () => {
+      await loadBootstrap();
+      if (!cancelled) {
+        /* loading cleared inside loadBootstrap */
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [loadBootstrap]);
 
   const filtered = React.useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -184,7 +195,7 @@ export function PosClient() {
     (s, l) => s + Number.parseFloat(l.product.price) * l.quantity,
     0,
   );
-  const discount = Number.parseFloat(discountStr.replace(",", ".")) || 0;
+  const discount = parseDiscountAmount(discountStr, subtotal);
   const total = Math.max(0, Math.round((subtotal - discount) * 100) / 100);
 
   function addProduct(p: PosProduct) {
@@ -267,14 +278,25 @@ export function PosClient() {
         body: JSON.stringify(body),
       });
       const json = (await res.json()) as
-        | { success: true; data: { invoice: { id: string } } }
+        | {
+            success: true;
+            data: {
+              invoice: {
+                id: string;
+                invoice_number: string | null;
+              };
+            };
+          }
         | { success: false; error: string };
       if (!res.ok || !json.success) {
         throw new Error(!json.success ? json.error : "Error");
       }
       nuevaVentaLibre();
+      void loadBootstrap({ silent: true });
       router.refresh();
-      alert(`Venta registrada. Factura: ${json.data.invoice.id.slice(0, 8)}…`);
+      toast.success(
+        `Venta registrada. N° ${json.data.invoice.invoice_number ?? json.data.invoice.id.slice(0, 8)}`,
+      );
     } catch (e) {
       setSubmitErr(e instanceof Error ? e.message : "Error al guardar");
     } finally {
@@ -545,7 +567,7 @@ export function PosClient() {
             <div className="mt-auto border-t bg-muted/30 p-3">
               <Button
                 type="button"
-                className="h-11 w-full justify-between gap-2 bg-foreground text-background hover:bg-foreground/90"
+                className="h-11 w-full justify-between gap-2 bg-wakecito-mint text-wakecito-charcoal hover:bg-wakecito-mint/85"
                 disabled={cartLines.length === 0}
                 onClick={() => {
                   setSubmitErr(null);

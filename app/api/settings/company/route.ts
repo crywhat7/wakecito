@@ -39,20 +39,35 @@ export async function PATCH(request: Request) {
   try {
     const db = getDb();
 
-    await db
+    const companyUpdate: {
+      name: string;
+      tax_id: string | null;
+      auth_code: string | null;
+      range_start: string | null;
+      range_end: string | null;
+      expiration_date: string | null;
+      updated_at: Date;
+      invoice_next_number?: number;
+    } = {
+      name: d.name,
+      tax_id: toNullIfEmpty(d.tax_id),
+      auth_code: toNullIfEmpty(d.auth_code),
+      range_start: toNullIfEmpty(d.range_start),
+      range_end: toNullIfEmpty(d.range_end),
+      expiration_date: d.expiration_date.trim()
+        ? d.expiration_date.trim()
+        : null,
+      updated_at: new Date(),
+    };
+    if (d.invoice_next_number !== undefined) {
+      companyUpdate.invoice_next_number = d.invoice_next_number;
+    }
+
+    const [out] = await db
       .update(companies)
-      .set({
-        name: d.name,
-        tax_id: toNullIfEmpty(d.tax_id),
-        auth_code: toNullIfEmpty(d.auth_code),
-        range_start: toNullIfEmpty(d.range_start),
-        range_end: toNullIfEmpty(d.range_end),
-        expiration_date: d.expiration_date.trim()
-          ? d.expiration_date.trim()
-          : null,
-        updated_at: new Date(),
-      })
-      .where(eq(companies.id, session.company.id));
+      .set(companyUpdate)
+      .where(eq(companies.id, session.company.id))
+      .returning({ invoice_next_number: companies.invoice_next_number });
 
     await createSessionFromClaims({
       sub: session.user.id,
@@ -71,6 +86,7 @@ export async function PATCH(request: Request) {
         range_start: toNullIfEmpty(d.range_start),
         range_end: toNullIfEmpty(d.range_end),
         expiration_date: d.expiration_date.trim() || null,
+        invoice_next_number: out?.invoice_next_number ?? 1,
       },
     });
   } catch (e) {

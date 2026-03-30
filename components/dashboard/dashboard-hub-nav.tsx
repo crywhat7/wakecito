@@ -37,6 +37,13 @@ type HubModule = HubModuleMenu | HubModuleLink
 
 const modules: HubModule[] = [
   {
+    id: "facturas",
+    label: "Facturas",
+    iconSrc: "/dashboard-icons/compras.svg",
+    kind: "menu",
+    options: [{ key: "historial", label: "Historial de Facturas", href: "/dashboard/historial-facturas" }],
+  },
+  {
     id: "clientes",
     label: "Clientes",
     iconSrc: "/dashboard-icons/clientes.svg",

@@ -2,6 +2,7 @@ import { Geist_Mono, Poppins } from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "@/components/ui/sonner"
 import { cn } from "@/lib/utils"
 
 const poppins = Poppins({
@@ -27,7 +28,10 @@ export default function RootLayout({
       className={cn(poppins.variable, fontMono.variable)}
     >
       <body className={cn(poppins.className, "antialiased")}>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          {children}
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   )

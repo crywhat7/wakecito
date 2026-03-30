@@ -25,6 +25,7 @@ type AccountData = {
     range_start: string | null
     range_end: string | null
     expiration_date: string
+    invoice_next_number: number
   }
   user: { id: string; email: string; name: string }
   canEditCompany: boolean
@@ -57,6 +58,7 @@ export function ConfiguracionClient() {
   const [coRangeStart, setCoRangeStart] = React.useState("")
   const [coRangeEnd, setCoRangeEnd] = React.useState("")
   const [coExp, setCoExp] = React.useState("")
+  const [coInvoiceNext, setCoInvoiceNext] = React.useState(1)
 
   const [userName, setUserName] = React.useState("")
   const [userEmail, setUserEmail] = React.useState("")
@@ -86,6 +88,7 @@ export function ConfiguracionClient() {
         setCoRangeStart(str(d.company.range_start))
         setCoRangeEnd(str(d.company.range_end))
         setCoExp(str(d.company.expiration_date))
+        setCoInvoiceNext(d.company.invoice_next_number ?? 1)
         setUserName(d.user.name)
         setUserEmail(d.user.email)
       } catch {
@@ -116,6 +119,7 @@ export function ConfiguracionClient() {
           range_start: coRangeStart,
           range_end: coRangeEnd,
           expiration_date: coExp,
+          invoice_next_number: coInvoiceNext,
         }),
       })
       const json = (await res.json()) as
@@ -229,8 +233,33 @@ export function ConfiguracionClient() {
                 value={coRangeStart}
                 onChange={(e) => setCoRangeStart(e.target.value)}
                 disabled={!data.canEditCompany}
-                placeholder="Ej. correlativo inicial"
+                placeholder="Primeros 10 caracteres usados en el número de factura"
               />
+              <p className="text-xs text-muted-foreground">
+                Los primeros 10 caracteres de este valor forman el prefijo del
+                número legal (ej. 000-001-01).
+              </p>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="co-invoice-next">
+                Siguiente número de factura (correlativo)
+              </Label>
+              <Input
+                id="co-invoice-next"
+                type="number"
+                min={1}
+                max={99999999}
+                value={coInvoiceNext}
+                onChange={(e) => {
+                  const n = Number.parseInt(e.target.value, 10)
+                  setCoInvoiceNext(Number.isFinite(n) ? Math.min(99_999_999, Math.max(1, n)) : 1)
+                }}
+                disabled={!data.canEditCompany}
+              />
+              <p className="text-xs text-muted-foreground">
+                Es el correlativo que se concatenará con 8 dígitos al prefijo del
+                rango. Después de cada venta se incrementa automáticamente.
+              </p>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="co-range-end">Rango autorizado — hasta</Label>

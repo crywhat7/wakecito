@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 import { IconLayoutCards, IconTable, IconX } from "@tabler/icons-react"
 
 import { Button } from "@/components/ui/button"
@@ -505,7 +506,7 @@ export function CrudExplorerClient({
       | { success: true }
       | { success: false; error: string }
     if (!json.success) {
-      alert(json.error)
+      toast.error(json.error)
       return
     }
     router.refresh()
