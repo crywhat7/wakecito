@@ -175,7 +175,7 @@ export function LoginScreen() {
                   required
                   value={email}
                   onChange={(ev) => setEmail(ev.target.value)}
-                  className="h-11 rounded-xl border-neutral-200 bg-neutral-50/80 px-3.5 text-sm placeholder:text-neutral-400 focus-visible:bg-white md:h-12 md:text-base"
+                  className="h-11 rounded-xl border-neutral-200 bg-neutral-50/80 px-3.5 text-sm text-wakecito-charcoal dark:text-wakecito-charcoal placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus-visible:bg-white md:h-12 md:text-base"
                 />
               </div>
 
@@ -192,7 +192,7 @@ export function LoginScreen() {
                   minLength={8}
                   value={password}
                   onChange={(ev) => setPassword(ev.target.value)}
-                  className="h-11 rounded-xl border-neutral-200 bg-neutral-50/80 px-3.5 text-sm placeholder:text-neutral-400 focus-visible:bg-white md:h-12 md:text-base"
+                  className="h-11 rounded-xl border-neutral-200 bg-neutral-50/80 px-3.5 text-sm text-wakecito-charcoal dark:text-wakecito-charcoal placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus-visible:bg-white md:h-12 md:text-base"
                 />
               </div>
 

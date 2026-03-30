@@ -169,7 +169,12 @@ export function RegisterScreen() {
 
             <form className="mt-6 space-y-3.5" onSubmit={handleSubmit}>
               <div className="space-y-2">
-                <Label htmlFor="reg-name">Tu nombre</Label>
+                <Label
+                  htmlFor="reg-name"
+                  className="text-wakecito-charcoal dark:text-wakecito-charcoal"
+                >
+                  Tu nombre
+                </Label>
                 <Input
                   id="reg-name"
                   name="name"
@@ -178,12 +183,17 @@ export function RegisterScreen() {
                   minLength={2}
                   value={name}
                   onChange={(ev) => setName(ev.target.value)}
-                  className="h-11 rounded-xl border-neutral-200 bg-neutral-50/80 px-3.5 text-sm md:h-11"
+                  className="h-11 rounded-xl border-neutral-200 bg-neutral-50/80 px-3.5 text-sm text-wakecito-charcoal dark:text-wakecito-charcoal placeholder:text-neutral-400 dark:placeholder:text-neutral-500 md:h-11"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="reg-company">Nombre del negocio</Label>
+                <Label
+                  htmlFor="reg-company"
+                  className="text-wakecito-charcoal dark:text-wakecito-charcoal"
+                >
+                  Nombre del negocio
+                </Label>
                 <Input
                   id="reg-company"
                   name="companyName"
@@ -193,12 +203,17 @@ export function RegisterScreen() {
                   value={companyName}
                   onChange={(ev) => setCompanyName(ev.target.value)}
                   placeholder="Mi tienda / Mi empresa"
-                  className="h-11 rounded-xl border-neutral-200 bg-neutral-50/80 px-3.5 text-sm md:h-11"
+                  className="h-11 rounded-xl border-neutral-200 bg-neutral-50/80 px-3.5 text-sm text-wakecito-charcoal dark:text-wakecito-charcoal placeholder:text-neutral-400 dark:placeholder:text-neutral-500 md:h-11"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="reg-email">Correo electrónico</Label>
+                <Label
+                  htmlFor="reg-email"
+                  className="text-wakecito-charcoal dark:text-wakecito-charcoal"
+                >
+                  Correo electrónico
+                </Label>
                 <Input
                   id="reg-email"
                   name="email"
@@ -207,12 +222,17 @@ export function RegisterScreen() {
                   required
                   value={email}
                   onChange={(ev) => setEmail(ev.target.value)}
-                  className="h-11 rounded-xl border-neutral-200 bg-neutral-50/80 px-3.5 text-sm md:h-11"
+                  className="h-11 rounded-xl border-neutral-200 bg-neutral-50/80 px-3.5 text-sm text-wakecito-charcoal dark:text-wakecito-charcoal placeholder:text-neutral-400 dark:placeholder:text-neutral-500 md:h-11"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="reg-password">Contraseña</Label>
+                <Label
+                  htmlFor="reg-password"
+                  className="text-wakecito-charcoal dark:text-wakecito-charcoal"
+                >
+                  Contraseña
+                </Label>
                 <Input
                   id="reg-password"
                   name="password"
@@ -222,12 +242,17 @@ export function RegisterScreen() {
                   minLength={8}
                   value={password}
                   onChange={(ev) => setPassword(ev.target.value)}
-                  className="h-11 rounded-xl border-neutral-200 bg-neutral-50/80 px-3.5 text-sm md:h-11"
+                  className="h-11 rounded-xl border-neutral-200 bg-neutral-50/80 px-3.5 text-sm text-wakecito-charcoal dark:text-wakecito-charcoal placeholder:text-neutral-400 dark:placeholder:text-neutral-500 md:h-11"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="reg-confirm">Confirmar contraseña</Label>
+                <Label
+                  htmlFor="reg-confirm"
+                  className="text-wakecito-charcoal dark:text-wakecito-charcoal"
+                >
+                  Confirmar contraseña
+                </Label>
                 <Input
                   id="reg-confirm"
                   name="confirm"
@@ -237,7 +262,7 @@ export function RegisterScreen() {
                   minLength={8}
                   value={confirm}
                   onChange={(ev) => setConfirm(ev.target.value)}
-                  className="h-11 rounded-xl border-neutral-200 bg-neutral-50/80 px-3.5 text-sm md:h-11"
+                  className="h-11 rounded-xl border-neutral-200 bg-neutral-50/80 px-3.5 text-sm text-wakecito-charcoal dark:text-wakecito-charcoal placeholder:text-neutral-400 dark:placeholder:text-neutral-500 md:h-11"
                 />
               </div>
 
@@ -250,7 +275,7 @@ export function RegisterScreen() {
                 />
                 <label
                   htmlFor="reg-terms"
-                  className="cursor-pointer text-[0.65rem] leading-relaxed text-neutral-500 sm:text-xs"
+                  className="cursor-pointer text-[0.65rem] leading-relaxed text-wakecito-charcoal dark:text-wakecito-charcoal sm:text-xs"
                 >
                   Acepto los{" "}
                   <Link
