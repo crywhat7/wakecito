@@ -244,7 +244,9 @@ export function ProductCreateClient() {
       if (!res.ok || !json.success) {
         throw new Error(!json.success ? json.error : "Error");
       }
-      router.push(`/dashboard/productos?creado=${encodeURIComponent(json.data.product.id)}`);
+      router.push(
+        `/dashboard/productos?creado=${encodeURIComponent(json.data.product.id)}`,
+      );
       router.refresh();
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Error al guardar");

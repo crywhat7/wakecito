@@ -1,12 +1,12 @@
-import { CrudExplorerClient } from "@/components/dashboard/crud-explorer-client";
+import { ProductsInventoryClient } from "@/components/dashboard/products-inventory-client";
 
 export default function ProductosPage() {
   return (
-    <div className="mx-auto max-w-6xl space-y-4">
+    <div className="mx-auto max-w-[1400px] space-y-4">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Productos</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Listado y edición de artículos de inventario. Para altas guiadas usá{" "}
+          Catálogo visual (solo lectura). Para dar de alta usá{" "}
           <a
             className="font-medium text-foreground underline-offset-4 hover:underline"
             href="/dashboard/productos/nuevo"
@@ -16,7 +16,7 @@ export default function ProductosPage() {
           .
         </p>
       </div>
-      <CrudExplorerClient variant="doctype" fixedTable="products" />
+      <ProductsInventoryClient />
     </div>
   );
 }
